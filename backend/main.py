@@ -59,10 +59,16 @@ _allowed_origins = [
     "http://localhost:5173",  # Vite dev server
     "http://localhost:3000",  # Alternative React port
     "http://127.0.0.1:5173",
+    "https://signspeak2.vercel.app",  # Production frontend (always allowed)
 ]
-# Add production frontend URL if set in environment
+# Add any extra frontend URLs from environment (comma-separated)
 if settings.FRONTEND_URL:
-    _allowed_origins.append(settings.FRONTEND_URL)
+    for _url in settings.FRONTEND_URL.split(","):
+        _url = _url.strip().rstrip("/")  # Strip whitespace and trailing slashes
+        if _url and _url not in _allowed_origins:
+            _allowed_origins.append(_url)
+
+print(f"CORS allowed origins: {_allowed_origins}")
 
 app.add_middleware(
     CORSMiddleware,
