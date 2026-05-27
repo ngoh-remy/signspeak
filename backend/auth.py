@@ -23,7 +23,7 @@ Security concepts used (for your defense):
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-import bcrypt
+from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -31,22 +31,21 @@ from database import get_db
 from models.models import User
 from config import settings
 
+# Password hashing context using bcrypt
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 # OAuth2 scheme - tells FastAPI where to find the token (Authorization header)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
 def hash_password(plain_password: str) -> str:
     """Hash a plain-text password using bcrypt."""
-    pw_bytes = plain_password.encode("utf-8")
-    salt = bcrypt.gensalt()
-    return bcrypt.hashpw(pw_bytes, salt).decode("utf-8")
+    return pwd_context.hash(plain_password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Check if a plain password matches a bcrypt hash."""
-    pw_bytes = plain_password.encode("utf-8")
-    hashed_bytes = hashed_password.encode("utf-8")
-    return bcrypt.checkpw(pw_bytes, hashed_bytes)
+    return pwd_context.verify(plain_password, hashed_password)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
