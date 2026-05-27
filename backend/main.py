@@ -23,8 +23,8 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Request
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from config import settings
@@ -50,33 +50,34 @@ app = FastAPI(
     redoc_url="/api/redoc",
 )
 
-# CORS (Cross-Origin Resource Sharing)
-# This allows the frontend (running on port 5173) to call our backend (port 8000)
-# Without this, browsers would block the requests for security reasons.
+# ─── CORS Middleware ──────────────────────────────────────────────────────────
+# Custom CORS middleware that echoes the request origin back.
+# This is more reliable than FastAPI's CORSMiddleware in some proxy setups
+# (e.g. Railway) and supports credentials correctly.
 
-# Build allowed origins list dynamically
-_allowed_origins = [
-    "http://localhost:5173",  # Vite dev server
-    "http://localhost:3000",  # Alternative React port
-    "http://127.0.0.1:5173",
-    "https://signspeak2.vercel.app",  # Production frontend (always allowed)
-]
-# Add any extra frontend URLs from environment (comma-separated)
-if settings.FRONTEND_URL:
-    for _url in settings.FRONTEND_URL.split(","):
-        _url = _url.strip().rstrip("/")  # Strip whitespace and trailing slashes
-        if _url and _url not in _allowed_origins:
-            _allowed_origins.append(_url)
+CORS_HEADERS = {
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+    "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept, Origin, X-Requested-With",
+    "Access-Control-Max-Age": "600",
+}
 
-print(f"CORS allowed origins: {_allowed_origins}")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=_allowed_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+@app.middleware("http")
+async def cors_middleware(request: Request, call_next):
+    origin = request.headers.get("origin", "")
+
+    # Handle OPTIONS preflight — must return 200 with CORS headers immediately
+    if request.method == "OPTIONS":
+        headers = {**CORS_HEADERS, "Access-Control-Allow-Origin": origin or "*"}
+        return Response(status_code=200, headers=headers)
+
+    # For all other requests, process normally then add CORS headers
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = origin or "*"
+    for key, value in CORS_HEADERS.items():
+        response.headers[key] = value
+    return response
 
 # Register all REST routes under /api prefix
 app.include_router(router, prefix="/api")
