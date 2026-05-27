@@ -1,13 +1,6 @@
 /* API configuration */
-// In production: use relative URL so Vercel proxies /api/* to Railway (no CORS)
-// In local dev: fall back to localhost:8000
-const isDev = import.meta.env.DEV;
-export const API_BASE_URL = isDev
-  ? (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000')
-  : '';  // empty = same origin → Vercel proxy handles it
-export const WS_BASE_URL = isDev
-  ? (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace('http', 'ws')
-  : `wss://signspeak-backend-production.up.railway.app`;  // WS still goes direct
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+export const WS_BASE_URL = API_BASE_URL.replace('http', 'ws');
 
 /* API helper with auth */
 export async function apiFetch(path, options = {}) {
