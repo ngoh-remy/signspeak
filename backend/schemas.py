@@ -12,7 +12,7 @@ Why Pydantic?
 
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 
 # ─── Auth Schemas ─────────────────────────────────────────────────────────────
@@ -32,13 +32,12 @@ class UserLogin(BaseModel):
 
 class UserResponse(BaseModel):
     """Data returned about a user (never includes password)."""
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     username: str
     email: str
     created_at: datetime
-
-    class Config:
-        from_attributes = True  # Allows creating from SQLAlchemy model instances
 
 
 class TokenResponse(BaseModel):
@@ -69,14 +68,13 @@ class FrameResponse(BaseModel):
 
 class TranslationHistoryItem(BaseModel):
     """A single item in translation history."""
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     sign_label: str
     confidence: float
-    session_id: Optional[str]
+    session_id: Optional[str] = None
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class TranslationHistoryResponse(BaseModel):
