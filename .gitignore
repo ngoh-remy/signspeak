@@ -1,0 +1,38 @@
+# ── Node / Frontend ──────────────────────────────────────────
+node_modules/
+dist/
+.next/
+.cache/
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+
+# ── Python / Backend ─────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+*.egg
+.env
+*.db
+*.sqlite3
+
+# ── AI Model / ML ────────────────────────────────────────────
+Ai_model/SL/
+Ai_model/__pycache__/
+Ai_model/.ipynb_checkpoints/
+*.h5
+*.pkl
+*.npy
+
+# ── IDE & OS ─────────────────────────────────────────────────
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+*.log
+
+# ── Docker ───────────────────────────────────────────────────
+.dockerignore
