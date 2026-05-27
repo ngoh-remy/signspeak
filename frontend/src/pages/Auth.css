@@ -99,7 +99,10 @@
 /* Password Toggle Button */
 .password-toggle-btn {
   position: absolute;
-  right: var(--space-4);
+  right: 0;
+  top: 0;
+  height: 100%;
+  padding: 0 var(--space-4); /* Larger touch target for mobile */
   background: transparent;
   border: none;
   color: var(--text-muted);
@@ -107,8 +110,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
   transition: color var(--transition-fast);
+  -webkit-appearance: none; /* Fix for iOS Safari */
+  appearance: none;
 }
 
 .password-toggle-btn:hover {
