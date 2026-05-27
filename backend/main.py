@@ -98,9 +98,9 @@ async def startup_event():
         from inference import recognizer
         recognizer.load()
         print(f"AI model loaded successfully ({len(recognizer.labels)} signs).")
-    except FileNotFoundError as e:
-        print(f"WARNING: AI model not loaded - {e}")
-        print("The /api/signs endpoint will use labels.json directly.")
+    except Exception as e:
+        print(f"WARNING: AI model not loaded - {type(e).__name__}: {e}")
+        print("The server will still run. Sign recognition via WebSocket will be unavailable.")
         print("Train the model first: python Ai_model/train.py")
 
 
