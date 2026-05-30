@@ -87,8 +87,8 @@ export const translations = {
       signingIn: "Signing In...",
       dontHaveAccount: "Don't have an account? ",
       createOneNow: "Create one now",
-      defenseSandbox: "Defense Sandbox Mode",
-      defenseSandboxDesc: "You can use standard credentials or register a new user locally. All credentials are encrypted using bcrypt and saved to our local SQLite instance."
+      defenseSandbox: "Security Guarantee",
+      defenseSandboxDesc: "Your privacy is our priority. All account credentials are encrypted using industry-standard bcrypt hashing before being securely stored."
     },
     signs: {
       // These are translations for the actual words recognized by the model or listed in the dictionary
@@ -208,8 +208,8 @@ export const translations = {
       signingIn: "Connexion en cours...",
       dontHaveAccount: "Vous n'avez pas de compte ? ",
       createOneNow: "Créez-en un maintenant",
-      defenseSandbox: "Mode Bac à Sable de Défense",
-      defenseSandboxDesc: "Vous pouvez utiliser des identifiants standard ou enregistrer un nouvel utilisateur localement. Tous les identifiants sont cryptés avec bcrypt et sauvegardés dans notre instance SQLite locale."
+      defenseSandbox: "Garantie de Sécurité",
+      defenseSandboxDesc: "Votre vie privée est notre priorité. Tous les identifiants de compte sont cryptés à l'aide du hachage standard de l'industrie bcrypt avant d'être stockés en toute sécurité."
     },
     signs: {
       "hello": "Bonjour",
