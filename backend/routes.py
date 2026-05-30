@@ -22,9 +22,10 @@ from models.models import User, TranslationHistory
 from schemas import (
     UserRegister, UserResponse, UserLogin, TokenResponse,
     TranslationHistoryItem, TranslationHistoryResponse,
-    SignsResponse, SignInfo, FrameResponse
+    SignsResponse, SignInfo, FrameResponse,
+    ForgotPasswordRequest, ResetPasswordRequest
 )
-from auth import hash_password, verify_password, create_access_token, get_current_user
+from auth import hash_password, verify_password, create_access_token, get_current_user, create_reset_token, verify_reset_token
 
 router = APIRouter()
 
@@ -126,6 +127,58 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
 def get_me(current_user: User = Depends(get_current_user)):
     """Return information about the currently authenticated user."""
     return UserResponse.model_validate(current_user)
+
+
+@router.post("/auth/forgot-password", tags=["Authentication"])
+def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """
+    Initiate the password reset flow.
+    Simulates sending an email by printing the reset link to the console.
+    """
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        # We still return success to prevent email enumeration attacks
+        return {"message": "If an account with that email exists, a password reset link has been sent."}
+
+    reset_token = create_reset_token(email=user.email)
+    
+    # In a real app, send this link via email (e.g., using SendGrid)
+    reset_link = f"http://localhost:5173/reset-password?token={reset_token}"
+    print("\n" + "="*50)
+    print("PASSWORD RESET REQUEST (Simulated Email)")
+    print(f"To: {user.email}")
+    print(f"Link: {reset_link}")
+    print("="*50 + "\n")
+    
+    return {
+        "message": "If an account with that email exists, a password reset link has been sent.",
+        "dev_token": reset_token  # Returned for easy testing during development
+    }
+
+
+@router.post("/auth/reset-password", tags=["Authentication"])
+def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
+    """
+    Complete the password reset using the token.
+    """
+    email = verify_reset_token(request.token)
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token."
+        )
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token."
+        )
+
+    user.hashed_password = hash_password(request.new_password)
+    db.commit()
+
+    return {"message": "Password has been successfully reset."}
 
 
 # ─── Signs Dictionary ─────────────────────────────────────────────────────────

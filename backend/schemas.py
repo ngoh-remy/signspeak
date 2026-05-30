@@ -47,6 +47,17 @@ class TokenResponse(BaseModel):
     user: UserResponse
 
 
+class ForgotPasswordRequest(BaseModel):
+    """Data required to request a password reset."""
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    """Data required to reset the password using a token."""
+    token: str
+    new_password: str = Field(..., min_length=6)
+
+
 # ─── Recognition Schemas ──────────────────────────────────────────────────────
 
 class RecognitionResult(BaseModel):
