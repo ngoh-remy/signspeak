@@ -61,7 +61,7 @@ export function AuthProvider({ children }) {
         method: 'POST',
         body: JSON.stringify({ email }),
       });
-      return { success: true, message: data.message };
+      return { success: true, message: data.message, dev_token: data.dev_token };
     } catch (err) {
       return { success: false, error: err.message };
     } finally {

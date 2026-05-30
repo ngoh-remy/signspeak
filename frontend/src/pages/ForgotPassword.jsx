@@ -10,11 +10,13 @@ export default function ForgotPassword() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [devToken, setDevToken] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setMessage('');
+    setDevToken(null);
 
     if (!email) {
       setError('Please enter your email address.');
@@ -25,6 +27,9 @@ export default function ForgotPassword() {
     if (res.success) {
       setSuccess(true);
       setMessage(res.message || 'If an account exists, a reset link has been sent.');
+      if (res.dev_token) {
+        setDevToken(res.dev_token);
+      }
     } else {
       setError(res.error || 'Failed to request password reset. Please try again.');
     }
@@ -55,8 +60,20 @@ export default function ForgotPassword() {
           {success ? (
             <div className="auth-success-message" style={{ textAlign: 'center', color: 'var(--text-primary)' }}>
               <CheckCircle size={48} className="mx-auto mb-4" style={{ color: 'var(--color-success)', margin: '0 auto 16px auto' }} />
-              <p className="mb-6">{message}</p>
-              <Link to="/login" className="btn btn-primary" style={{ display: 'inline-block', marginTop: '16px' }}>
+              <p className="mb-4">{message}</p>
+              
+              {devToken && (
+                <div style={{ background: 'rgba(124, 58, 237, 0.1)', padding: '16px', borderRadius: '8px', marginBottom: '16px', border: '1px solid rgba(124, 58, 237, 0.3)' }}>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                    [DEVELOPER MODE] Since email sending is simulated, click below to reset:
+                  </p>
+                  <Link to={`/reset-password?token=${devToken}`} className="btn btn-primary" style={{ width: '100%' }}>
+                    Go to Reset Password Page
+                  </Link>
+                </div>
+              )}
+
+              <Link to="/login" className="btn btn-secondary" style={{ display: 'inline-block', width: '100%' }}>
                 Return to Login
               </Link>
             </div>
