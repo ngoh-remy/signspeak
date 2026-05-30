@@ -64,9 +64,6 @@ export default function ForgotPassword() {
               
               {devToken && (
                 <div style={{ background: 'rgba(124, 58, 237, 0.1)', padding: '16px', borderRadius: '8px', marginBottom: '16px', border: '1px solid rgba(124, 58, 237, 0.3)' }}>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                    [DEVELOPER MODE] Since email sending is simulated, click below to reset:
-                  </p>
                   <Link to={`/reset-password?token=${devToken}`} className="btn btn-primary" style={{ width: '100%' }}>
                     Go to Reset Password Page
                   </Link>

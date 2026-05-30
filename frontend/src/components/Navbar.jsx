@@ -64,7 +64,7 @@ export default function Navbar() {
                 <User size={14} />
               </div>
               <span className="navbar-username">{user.username}</span>
-              <button className="btn btn-ghost btn-sm navbar-logout" onClick={handleLogout} title={t.logout}>
+              <button className="navbar-logout" onClick={handleLogout} title={t.logout}>
                 <LogOut size={16} />
               </button>
             </div>
