@@ -20,7 +20,7 @@ export default function Translate() {
 
   // States
   const [isActive, setIsActive] = useState(false);
-  const [status, setStatus] = useState(t.cameraOffline); 
+  const [status, setStatus] = useState('OFFLINE'); 
   const [bufferedFrames, setBufferedFrames] = useState(0);
   const [maxFrames] = useState(30);
   const [predictions, setPredictions] = useState([]); // List of current session's recognized signs
@@ -66,7 +66,7 @@ export default function Translate() {
   // Start webcam and connect WebSocket
   const startSession = async () => {
     setErrorMsg('');
-    setStatus(t.connecting);
+    setStatus('CONNECTING');
     try {
       // 1. Get webcam stream
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -89,20 +89,20 @@ export default function Translate() {
 
       ws.onopen = () => {
         setIsActive(true);
-        setStatus(t.readyToSign);
+        setStatus('READY');
       };
 
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
 
         if (data.type === 'connected') {
-          setStatus(t.readyToSign);
+          setStatus('READY');
         } else if (data.type === 'processing') {
           setBufferedFrames(data.frames_buffered);
           if (data.frames_buffered > 0) {
-            setStatus(t.processingMovement);
+            setStatus('PROCESSING');
           } else {
-            setStatus(t.readyToSign);
+            setStatus('READY');
           }
         } else if (data.type === 'recognition') {
           // Translate the recognized sign if possible
@@ -125,7 +125,7 @@ export default function Translate() {
 
           // Reset status
           setBufferedFrames(0);
-          setStatus(t.readyToSign);
+          setStatus('READY');
 
           // Refresh database history
           if (user) {
@@ -143,7 +143,7 @@ export default function Translate() {
       };
 
       ws.onclose = () => {
-        setStatus(t.cameraOffline);
+        setStatus('OFFLINE');
         setIsActive(false);
         stopSession();
       };
@@ -173,7 +173,7 @@ export default function Translate() {
     } catch (err) {
       console.error(err);
       setErrorMsg('Webcam access denied. Please allow camera permissions.');
-      setStatus(t.cameraOffline);
+      setStatus('OFFLINE');
       setIsActive(false);
     }
   };
@@ -181,7 +181,7 @@ export default function Translate() {
   // Close webcam and WebSocket
   const stopSession = () => {
     setIsActive(false);
-    setStatus(t.cameraOffline);
+    setStatus('OFFLINE');
     setBufferedFrames(0);
 
     if (intervalRef.current) {
@@ -297,7 +297,10 @@ export default function Translate() {
               <div className="camera-hud-top">
                 <span className="hud-badge status-badge">
                   <span className={`status-dot status-dot--${isActive ? 'active' : 'idle'}`}></span>
-                  {status}
+                  {status === 'OFFLINE' ? t.cameraOffline : 
+                   status === 'CONNECTING' ? t.connecting : 
+                   status === 'READY' ? t.readyToSign : 
+                   status === 'PROCESSING' ? t.processingMovement : status}
                 </span>
                 <span className="hud-badge mode-badge">
                   <ArrowLeftRight size={12} /> {t.webSocketStream}
