@@ -48,14 +48,7 @@ TOP_SIGNS = [
     "small", "happy", "sad", "angry", "sick", "pain", "doctor",
     "hospital", "school", "home", "family", "mother", "father",
     "brother", "sister", "friend", "man", "woman", "child",
-    "water", "food", "money", "work", "learn", "teach", "read",
-    "write", "call", "hear", "see", "think", "know", "forget",
-    "remember", "try", "can", "cannot", "always", "never", "today",
-    "tomorrow", "yesterday", "morning", "afternoon", "night",
-    "day", "week", "month", "year", "time", "now", "later",
-    "before", "after", "with", "without", "and", "or", "but",
-    "because", "if", "when", "beautiful", "important", "different",
-    "same", "true", "false", "right", "wrong", "question", "answer"
+    "water"
 ]
 
 # ─── MediaPipe Setup ──────────────────────────────────────────────────────────

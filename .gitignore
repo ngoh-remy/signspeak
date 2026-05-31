@@ -19,11 +19,12 @@ __pycache__/
 *.db
 *.sqlite3
 
-# ── AI Model / ML ────────────────────────────────────────────
+# 🤖 AI Model / ML 🤖
 Ai_model/SL/
 Ai_model/__pycache__/
 Ai_model/.ipynb_checkpoints/
 *.h5
+!Ai_model/model.h5
 *.pkl
 *.npy
 
