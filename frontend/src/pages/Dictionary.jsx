@@ -5,20 +5,27 @@ import { translations } from '../translations';
 import './Dictionary.css';
 
 // Pre-defined subset of key demo-quality vocabulary with academic/technical descriptions
-const DEMO_SIGNS = [
-  { sign: 'hello', category: 'Salutation', complexity: 'Low', description: 'Hand moves from forehead outward, simulating a polite salute. Used as standard introductory gesture.' },
-  { sign: 'thank you', category: 'Politeness', complexity: 'Medium', description: 'Touch fingertips of active flat hand to lips/chin, then move hand forward and down toward the listener.' },
-  { sign: 'please', category: 'Politeness', complexity: 'Low', description: 'Rub the flat palm of the active hand in a circular motion over the chest area.' },
-  { sign: 'yes', category: 'Affirmation', complexity: 'Low', description: 'Make a fist with active hand and tilt it up and down, simulating a nodding head.' },
-  { sign: 'no', category: 'Negation', complexity: 'Low', description: 'Quickly snap index and middle fingers down together onto the thumb.' },
-  { sign: 'help', category: 'Assistance', complexity: 'High', description: 'Place active closed hand, thumb pointing up, on flat palm of inactive hand, then raise both hands together.' },
-  { sign: 'sorry', category: 'Politeness', complexity: 'Low', description: 'Make a fist (A-handshape) and rub it in circular motions over the chest area.' },
-  { sign: 'love', category: 'Emotion', complexity: 'Low', description: 'Cross both hands over the chest, palms facing inward and fingers touching opposite shoulders.' },
-  { sign: 'good', category: 'Evaluation', complexity: 'Medium', description: 'Place fingertips of active flat hand on lips, move it down, and rest it flat on the palm of inactive hand.' },
-  { sign: 'bad', category: 'Evaluation', complexity: 'Medium', description: 'Touch active flat hand to lips, move it down while turning palm outward and downward.' },
-  { sign: 'eat', category: 'Action', complexity: 'Low', description: 'Bring active hand in a closed "O" handshape to the mouth twice, imitating eating.' },
-  { sign: 'water', category: 'Noun', complexity: 'Medium', description: 'Form "W" shape with active hand (index, middle, ring finger up) and tap index finger against chin twice.' }
+const TRAINED_WORDS = [
+  "hello", "thank you", "please", "sorry", "yes", "no", "help",
+  "love", "good", "bad", "name", "what", "how", "where", "who",
+  "want", "need", "like", "eat", "drink", "go", "come", "stop",
+  "wait", "understand", "again", "finish", "more", "less", "big",
+  "small", "happy", "sad", "angry", "sick", "pain", "doctor",
+  "hospital", "school", "home", "family", "mother", "father",
+  "brother", "sister", "friend", "man", "woman", "child",
+  "water"
 ];
+
+// Dynamically generate the demo signs from the translations
+const DEMO_SIGNS = TRAINED_WORDS.map(word => {
+  const dictInfo = translations.en.dictionarySigns[word] || { category: "General", complexity: "Medium", description: "Standard ASL gesture." };
+  return {
+    sign: word,
+    category: dictInfo.category,
+    complexity: dictInfo.complexity,
+    description: dictInfo.description
+  };
+});
 
 export default function Dictionary() {
   const { language } = useAuth();
