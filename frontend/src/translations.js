@@ -419,6 +419,18 @@ export const translations = {
       defenseSandboxDesc: "Votre vie privée est notre priorité. Tous les identifiants de compte sont cryptés à l'aide du hachage standard de l'industrie bcrypt avant d'être stockés en toute sécurité."
     },
     signs: {
+      "hello": "Bonjour",
+      "thank you": "Merci",
+      "please": "S'il vous plaît",
+      "sorry": "Pardon",
+      "yes": "Oui",
+      "no": "Non",
+      "help": "Aide",
+      "love": "Amour",
+      "good": "Bien",
+      "bad": "Mauvais",
+      "eat": "Manger",
+      "water": "Eau",
       "mother": "Mère",
       "father": "Père",
       "boy": "Garçon",
