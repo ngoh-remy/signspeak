@@ -615,6 +615,7 @@ class SignRecognizer:
 
             if confidence >= CONFIDENCE_THRESHOLD:
                 sign_label = self.labels[predicted_class]
+                self.sequence_buffer.clear()  # Clear buffer to reset the UI progress bar loop
                 return sign_label, confidence
                 
         except Exception as e:

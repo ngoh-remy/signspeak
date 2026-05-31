@@ -176,31 +176,27 @@ async def websocket_recognize(
             if result is not None:
                 sign_label, confidence = result
 
-                # Only send result if it's a new sign (debounce)
-                if sign_label != last_sign:
-                    last_sign = sign_label
+                response = {
+                    "type": "recognition",
+                    "sign": sign_label,
+                    "confidence": round(confidence, 4),
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+                await websocket.send_json(response)
 
-                    response = {
-                        "type": "recognition",
-                        "sign": sign_label,
-                        "confidence": round(confidence, 4),
-                        "timestamp": datetime.utcnow().isoformat(),
-                    }
-                    await websocket.send_json(response)
-
-                    # Save to database if user is authenticated
-                    if user_id:
-                        try:
-                            record = TranslationHistory(
-                                user_id=user_id,
-                                sign_label=sign_label,
-                                confidence=confidence,
-                                session_id=session_id,
-                            )
-                            db.add(record)
-                            db.commit()
-                        except Exception:
-                            db.rollback()
+                # Save to database if user is authenticated
+                if user_id:
+                    try:
+                        record = TranslationHistory(
+                            user_id=user_id,
+                            sign_label=sign_label,
+                            confidence=confidence,
+                            session_id=session_id,
+                        )
+                        db.add(record)
+                        db.commit()
+                    except Exception:
+                        db.rollback()
             else:
                 # Still accumulating frames - tell the client how many we have
                 frames_buffered = len(recognizer.sequence_buffer)
