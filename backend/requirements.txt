@@ -15,7 +15,7 @@ pytest-asyncio
 httpx<0.28.0
 
 # AI Model Inference Dependencies
-tensorflow==2.13.0
+tensorflow==2.15.0
 mediapipe==0.10.7
 opencv-python-headless==4.8.1.78
 numpy==1.24.3
