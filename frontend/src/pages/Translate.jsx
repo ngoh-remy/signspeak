@@ -24,8 +24,8 @@ export default function Translate() {
   const [bufferedFrames, setBufferedFrames] = useState(0);
   const [maxFrames] = useState(30);
   const [predictions, setPredictions] = useState([]); // List of current session's recognized signs
-  const [sentence, setSentence] = useState(''); // Combined sentence string
-  const [lastPrediction, setLastPrediction] = useState(null); // { sign, confidence, timestamp }
+  const [sentenceTokens, setSentenceTokens] = useState([]); // Array of raw sign tokens
+  const [lastPrediction, setLastPrediction] = useState(null); // { rawSign, confidence, timestamp }
   const [isMuted, setIsMuted] = useState(false);
   const [facingMode, setFacingMode] = useState('user'); // 'user' for front, 'environment' for back
   const [historyItems, setHistoryItems] = useState([]);
@@ -110,15 +110,15 @@ export default function Translate() {
           const translatedSign = signsT[recognizedSignLower] || data.sign;
 
           const pred = {
-            sign: translatedSign,
+            rawSign: recognizedSignLower,
             confidence: data.confidence,
             timestamp: new Date(data.timestamp)
           };
           setLastPrediction(pred);
           setPredictions(prev => [pred, ...prev]);
 
-          // Update sentence
-          setSentence(prev => prev ? `${prev} ${translatedSign}` : translatedSign);
+          // Update sentence tokens
+          setSentenceTokens(prev => [...prev, recognizedSignLower]);
 
           // Audio feedback
           speakText(translatedSign);
@@ -234,20 +234,21 @@ export default function Translate() {
   }, []);
 
   const handleSpeakSentence = () => {
-    speakText(sentence);
+    const fullSentence = sentenceTokens.map(token => signsT[token] || token).join(' ');
+    speakText(fullSentence);
   };
 
   const handleClearSentence = () => {
-    setSentence('');
+    setSentenceTokens([]);
     setLastPrediction(null);
     setPredictions([]);
   };
 
   const handleBackspace = () => {
-    setSentence(prev => {
-      const words = prev.trim().split(' ');
-      words.pop();
-      return words.join(' ');
+    setSentenceTokens(prev => {
+      const newTokens = [...prev];
+      newTokens.pop();
+      return newTokens;
     });
   };
 
@@ -369,25 +370,29 @@ export default function Translate() {
                 <h3>{t.translationBuilder}</h3>
               </div>
               <div className="builder-actions">
-                <button className="btn btn-secondary btn-sm" onClick={handleBackspace} disabled={!sentence}>
+                <button className="btn btn-secondary btn-sm" onClick={handleBackspace} disabled={sentenceTokens.length === 0}>
                   {t.backspace}
                 </button>
-                <button className="btn btn-secondary btn-sm" onClick={handleClearSentence} disabled={!sentence}>
+                <button className="btn btn-secondary btn-sm" onClick={handleClearSentence} disabled={sentenceTokens.length === 0}>
                   <Trash2 size={12} /> {t.clear}
                 </button>
               </div>
             </div>
 
             <div className="sentence-display">
-              {sentence ? (
-                <p className="sentence-text">{sentence}</p>
+              {sentenceTokens.length > 0 ? (
+                <p className="sentence-text">
+                  {sentenceTokens.map((token, idx) => (
+                    <span key={idx}>{signsT[token] || token}{' '}</span>
+                  ))}
+                </p>
               ) : (
                 <span className="sentence-placeholder">{t.sentencePlaceholder}</span>
               )}
             </div>
 
             <div className="builder-footer">
-              <button className="btn btn-primary" onClick={handleSpeakSentence} disabled={!sentence}>
+              <button className="btn btn-primary" onClick={handleSpeakSentence} disabled={sentenceTokens.length === 0}>
                 <Volume2 size={16} /> {t.speakOutLoud}
               </button>
             </div>
@@ -401,7 +406,7 @@ export default function Translate() {
             <h3><Sparkles size={16} className="text-gradient" /> {t.latestResult}</h3>
             {lastPrediction ? (
               <div className="prediction-details">
-                <div className="prediction-word">{lastPrediction.sign}</div>
+                <div className="prediction-word">{signsT[lastPrediction.rawSign] || lastPrediction.rawSign}</div>
                 <div className="confidence-box">
                   <div className="flex justify-between font-size-xs" style={{ marginBottom: '4px' }}>
                     <span>{t.confidenceScore}</span>
