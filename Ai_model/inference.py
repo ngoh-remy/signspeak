@@ -33,7 +33,7 @@ from typing import Optional, Tuple
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "model.h5")
 LABELS_PATH = os.path.join(os.path.dirname(__file__), "labels.json")
 SEQUENCE_LENGTH = 30
-CONFIDENCE_THRESHOLD = 0.70  # Only report predictions above 70% confidence
+CONFIDENCE_THRESHOLD = 0.45  # Lowered from 0.70 to 0.45 to allow real-time predictions with limited training data
 
 # ─── Dependency Resilience Checks ─────────────────────────────────────────────
 
