@@ -12,6 +12,19 @@ export function AuthProvider({ children }) {
   const [language, setLanguage] = useState(() => {
     return localStorage.getItem('signspeak_language') || 'en';
   });
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('signspeak_theme') || 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    localStorage.setItem('signspeak_theme', newTheme);
+  };
 
   const changeLanguage = (lang) => {
     setLanguage(lang);
@@ -91,7 +104,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, language, changeLanguage, forgotPassword, resetPassword }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, language, changeLanguage, forgotPassword, resetPassword, theme, toggleTheme }}>
       {children}
     </AuthContext.Provider>
   );

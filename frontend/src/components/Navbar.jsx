@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Hand, Menu, X, LogOut, User, BookOpen, Mic, Info } from 'lucide-react';
+import { Hand, Menu, X, LogOut, User, BookOpen, Mic, Info, Sun, Moon } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { translations } from '../translations';
@@ -7,7 +7,7 @@ import './Navbar.css';
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { user, logout, language, changeLanguage } = useAuth();
+  const { user, logout, language, changeLanguage, theme, toggleTheme } = useAuth();
   const t = translations[language].nav;
   const location = useLocation();
   const navigate = useNavigate();
@@ -48,6 +48,9 @@ export default function Navbar() {
 
         {/* Desktop Auth & Language */}
         <div className="navbar-auth">
+          <button className="navbar-theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
           <div className="language-switcher">
             <button 
               className={`lang-btn ${language === 'en' ? 'active' : ''}`} 
@@ -103,6 +106,10 @@ export default function Navbar() {
           ))}
           <div className="navbar-mobile-divider" />
           
+          <button className="navbar-mobile-link" onClick={() => { toggleTheme(); setMenuOpen(false); }}>
+            {theme === 'dark' ? <><Sun size={16} /> Light Mode</> : <><Moon size={16} /> Dark Mode</>}
+          </button>
+
           <div className="navbar-mobile-lang">
             <button 
               className={`lang-btn ${language === 'en' ? 'active' : ''}`} 
