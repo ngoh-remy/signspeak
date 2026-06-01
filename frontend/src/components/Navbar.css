@@ -227,7 +227,9 @@
   left: 0;
   width: 100%;
   background: var(--bg-card);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border-color);
   padding: var(--space-4) 0;
   flex-direction: column;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
@@ -240,7 +242,13 @@
   padding: var(--space-3) var(--space-6);
   color: var(--text-secondary);
   font-weight: 500;
+  font-size: var(--font-size-base);
   text-decoration: none;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
   transition: all 0.2s;
 }
 
