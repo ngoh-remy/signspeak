@@ -78,7 +78,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 4/3;
-  background: #090a0f;
+  background: var(--bg-elevated);
   border-radius: var(--radius-lg);
   overflow: hidden;
   display: flex;
@@ -124,7 +124,7 @@
 }
 
 .status-badge {
-  background: rgba(11, 13, 20, 0.7);
+  background: var(--bg-nav);
   color: var(--text-primary);
 }
 

@@ -31,6 +31,7 @@
   --bg-card:              rgba(26, 29, 46, 0.85);
   --bg-glass:             rgba(255, 255, 255, 0.04);
   --bg-glass-hover:       rgba(255, 255, 255, 0.08);
+  --bg-nav:               rgba(15, 16, 22, 0.7);
 
   /* Text */
   --text-primary:         #F1F0FF;
@@ -99,6 +100,7 @@
   --bg-card:              rgba(255, 255, 255, 0.85);
   --bg-glass:             rgba(0, 0, 0, 0.04);
   --bg-glass-hover:       rgba(0, 0, 0, 0.08);
+  --bg-nav:               rgba(255, 255, 255, 0.7);
 
   --text-primary:         #0F172A;
   --text-secondary:       #475569;
