@@ -9,7 +9,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy backend requirements and install Python dependencies
-COPY backend/requirements.txt ./requirements.txt
+# requirements-deploy.txt excludes TensorFlow/MediaPipe (too heavy for free tier)
+# The backend will run in Simulation Mode - see Ai_model/inference.py
+COPY backend/requirements-deploy.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the Ai_model directory so the backend can import it
