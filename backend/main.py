@@ -53,7 +53,7 @@ app = FastAPI(
 # ─── CORS Middleware ──────────────────────────────────────────────────────────
 # Custom CORS middleware that echoes the request origin back.
 # This is more reliable than FastAPI's CORSMiddleware in some proxy setups
-# (e.g. Railway) and supports credentials correctly.
+# and supports credentials correctly.
 
 CORS_HEADERS = {
     "Access-Control-Allow-Credentials": "true",

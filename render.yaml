@@ -1,16 +1,23 @@
 services:
   - type: web
     name: signspeak-backend
-    runtime: python
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: .
     envVars:
       - key: SECRET_KEY
         generateValue: true
       - key: FRONTEND_URL
-        value: https://signspeak.vercel.app
+        value: https://signspeak2.vercel.app
       - key: DATABASE_URL
-        value: sqlite:///./signspeak.db
-      - key: PYTHON_VERSION
-        value: "3.11.0"
+        fromDatabase:
+          name: signspeak-db
+          property: connectionString
+      - key: PORT
+        value: "8000"
+
+databases:
+  - name: signspeak-db
+    databaseName: signspeak
+    user: signspeak
+    plan: free
