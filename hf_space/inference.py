@@ -38,7 +38,7 @@ ENCODER_PATH = os.path.join(os.path.dirname(__file__), "label_encoder.pkl")
 
 IMG_SIZE     = 64    # Must match training: 64×64
 N_VOTES      = 20    # Accumulate 20 frame predictions before deciding (~2 seconds at 10 FPS)
-CONFIDENCE_THRESHOLD = 0.60  # Require 60% of accumulated vote probability to emit
+CONFIDENCE_THRESHOLD = 0.35  # Require 35% of accumulated vote probability to emit
 
 # ─── Dependency Checks ────────────────────────────────────────────────────────
 

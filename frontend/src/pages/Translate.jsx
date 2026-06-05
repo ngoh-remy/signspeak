@@ -105,7 +105,7 @@ export default function Translate() {
           setBufferedFrames(data.frames_buffered);
           if (data.frames_buffered > 0 && data.frames_buffered < 20) {
             setStatus('PROCESSING');
-          } else if (data.frames_buffered === 0) {
+          } else {
             setStatus('READY');
           }
         } else if (data.type === 'recognition') {
