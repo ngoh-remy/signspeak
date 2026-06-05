@@ -103,7 +103,7 @@ class SignRecognizer:
 
         try:
             from tensorflow.keras.models import load_model as keras_load
-            self.model = keras_load(MODEL_PATH)
+            self.model = keras_load(MODEL_PATH, compile=False)
             print(f"[+] MobileNetV2 model loaded: {MODEL_PATH}")
 
             with open(ENCODER_PATH, "rb") as f:
