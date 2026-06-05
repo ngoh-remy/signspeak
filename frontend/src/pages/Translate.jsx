@@ -103,7 +103,7 @@ export default function Translate() {
           setStatus('READY');
         } else if (data.type === 'processing') {
           setBufferedFrames(data.frames_buffered);
-          if (data.frames_buffered > 0) {
+          if (data.frames_buffered > 0 && data.frames_buffered < 30) {
             setStatus('PROCESSING');
           } else {
             setStatus('READY');
@@ -330,7 +330,7 @@ export default function Translate() {
               )}
 
               {/* Frame Buffer progress bar */}
-              {isActive && bufferedFrames > 0 && (
+              {isActive && bufferedFrames > 0 && bufferedFrames < maxFrames && (
                 <div className="buffer-overlay">
                   <div className="buffer-progress-container">
                     <span className="buffer-text">{t.capturingGestures} {bufferedFrames} / {maxFrames} {t.frames}</span>
