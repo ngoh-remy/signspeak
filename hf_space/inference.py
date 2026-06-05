@@ -633,9 +633,48 @@ class SignRecognizer:
 
         return None
 
-    def reset(self):
-        """Clear the frame buffer. Call this when starting a new translation session."""
+    def new_session(self):
+        """
+        Start a fresh recognition session.
+        
+        This MUST be called at the start of each new WebSocket connection.
+        It does two things:
+          1. Clears the frame buffer so the progress bar resets.
+          2. Closes and RECREATES the MediaPipe Holistic instance.
+        
+        Why recreate holistic?
+          MediaPipe's Holistic (static_image_mode=False) maintains an internal timestamp
+          counter across frames. When a WebSocket session ends and a new one begins,
+          the new frames have "old" timestamps relative to MediaPipe's memory, causing:
+            "Packet timestamp mismatch. Expected X but received X-1."
+          This crash kills the WebSocket → camera freezes.
+          Recreating holistic resets its timestamp counter to zero for the new session.
+        """
         self.sequence_buffer.clear()
+
+        if not SIMULATION_MODE and mp is not None and self._loaded:
+            # Close old holistic instance to free its timestamp state
+            if self.holistic:
+                try:
+                    self.holistic.close()
+                except Exception:
+                    pass
+
+            # Recreate a fresh holistic instance with a clean timestamp counter
+            mp_holistic = mp.solutions.holistic
+            self.holistic = mp_holistic.Holistic(
+                static_image_mode=False,
+                model_complexity=2,
+                smooth_landmarks=True,
+                min_detection_confidence=0.5,
+                min_tracking_confidence=0.5,
+            )
+            print("[+] MediaPipe Holistic reset for new session.")
+
+    def reset(self):
+        """Legacy alias — prefer new_session() for WebSocket connections."""
+        self.sequence_buffer.clear()
+
 
     def get_all_labels(self):
         """Return the full list of supported signs."""

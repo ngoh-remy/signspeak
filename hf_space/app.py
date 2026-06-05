@@ -43,7 +43,10 @@ def health():
 async def websocket_recognize(websocket: WebSocket):
     await websocket.accept()
     session_id = str(uuid.uuid4())
-    recognizer.reset()
+
+    # Reset MediaPipe holistic + frame buffer for a clean session.
+    # Must run in a thread because holistic.close() + recreation does I/O.
+    await asyncio.to_thread(recognizer.new_session)
 
     await websocket.send_json({
         "type": "connected",
@@ -51,26 +54,21 @@ async def websocket_recognize(websocket: WebSocket):
         "session_id": session_id,
     })
 
-    # Initialize a lock to prevent concurrent MediaPipe executions
-    # and drop frames when the server is busy processing the previous one.
+    # Lock prevents concurrent MediaPipe calls; drops frames when busy.
     lock = asyncio.Lock()
 
     try:
-        # Check simulation status at start of websocket connection
         from inference import SIMULATION_MODE, SIMULATION_REASON
         print(f"[*] Connection received. Active Engine Status: {'SIMULATION' if SIMULATION_MODE else 'REAL-INFERENCE'} (Reason: {SIMULATION_REASON})")
         
         while True:
-            # Receive video frame bytes from the React client
             frame_bytes = await websocket.receive_bytes()
             
-            # If the inference engine is currently busy, drop this frame
-            # to prevent backpressure, memory growth, and buffer lag.
+            # Drop frames if inference is still running to prevent backpressure.
             if lock.locked():
                 continue
                 
             async with lock:
-                # Process the frame in a worker thread to keep the event loop responsive
                 result = await asyncio.to_thread(recognizer.process_frame, frame_bytes)
 
             if result is not None:
@@ -82,7 +80,6 @@ async def websocket_recognize(websocket: WebSocket):
                     "timestamp": datetime.utcnow().isoformat(),
                 })
             else:
-                # Accumulating frames to build the sequence (predicts at 20 frames)
                 frames_buffered = len(recognizer.sequence_buffer)
                 await websocket.send_json({
                     "type": "processing",
@@ -100,3 +97,9 @@ async def websocket_recognize(websocket: WebSocket):
             })
         except Exception:
             pass
+    finally:
+        # Pre-warm holistic for the next connection attempt so reconnects are instant.
+        # This runs AFTER the connection closes, in a background thread.
+        asyncio.create_task(asyncio.to_thread(recognizer.new_session))
+        print(f"[+] Session {session_id} cleaned up. Holistic pre-warmed for next connection.")
+
