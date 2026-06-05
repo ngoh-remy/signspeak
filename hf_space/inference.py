@@ -202,8 +202,6 @@ class SignRecognizer:
     ]
         self.holistic = None
         self.sequence_buffer = deque(maxlen=SEQUENCE_LENGTH)
-        self.last_emitted_sign = None
-        self.low_confidence_counter = 0
         self._loaded = False
 
     def load(self):
@@ -617,16 +615,10 @@ class SignRecognizer:
 
             if confidence >= CONFIDENCE_THRESHOLD:
                 sign_label = self.labels[predicted_class]
-                self.low_confidence_counter = 0  # Reset low confidence counter
-                
-                # Only return the prediction if it's different from the last emitted one
-                if sign_label != self.last_emitted_sign:
-                    self.last_emitted_sign = sign_label
-                    return sign_label, confidence
-            else:
-                self.low_confidence_counter += 1
-                if self.low_confidence_counter >= 5:  # 500ms of low confidence resets deduplication
-                    self.last_emitted_sign = None
+                # Clear buffer so the progress bar resets from 0 → 30 for the next sign.
+                # This gives the user clear visual feedback: "captured! ready for next sign."
+                self.sequence_buffer.clear()
+                return sign_label, confidence
                 
         except Exception as e:
             print(f"Error in real-time inference loop: {e}")
@@ -637,8 +629,6 @@ class SignRecognizer:
     def reset(self):
         """Clear the frame buffer. Call this when starting a new translation session."""
         self.sequence_buffer.clear()
-        self.last_emitted_sign = None
-        self.low_confidence_counter = 0
 
     def get_all_labels(self):
         """Return the full list of supported signs."""

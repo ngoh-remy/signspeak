@@ -105,7 +105,7 @@ export default function Translate() {
           setBufferedFrames(data.frames_buffered);
           if (data.frames_buffered > 0 && data.frames_buffered < 30) {
             setStatus('PROCESSING');
-          } else {
+          } else if (data.frames_buffered === 0) {
             setStatus('READY');
           }
         } else if (data.type === 'recognition') {
@@ -180,7 +180,7 @@ export default function Translate() {
             }
           }, 'image/jpeg', 0.6); // 60% quality compress for bandwidth efficiency
         }
-      }, 100); // 10 FPS (100ms interval) is ideal for MediaPipe Holistic keypoint extraction
+      }, 50); // 20 FPS (50ms interval) — fills the 30-frame buffer in ~1.5s instead of 3s
 
     } catch (err) {
       console.error(err);
@@ -329,7 +329,7 @@ export default function Translate() {
                 </div>
               )}
 
-              {/* Frame Buffer progress bar */}
+              {/* Frame Buffer progress bar — always visible when active so user knows each sign is captured */}
               {isActive && bufferedFrames > 0 && bufferedFrames < maxFrames && (
                 <div className="buffer-overlay">
                   <div className="buffer-progress-container">
