@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { WS_BASE_URL, apiFetch } from '../api';
+import { HF_WS_BASE_URL, apiFetch } from '../api';
 import {
   Camera, CameraOff, Volume2, VolumeX, RefreshCw, AlertCircle, Play, Square,
   CheckCircle, History, MessageSquareCode, Sparkles, Send, Trash2, ArrowLeftRight
@@ -17,6 +17,7 @@ export default function Translate() {
   const streamRef = useRef(null);
   const wsRef = useRef(null);
   const intervalRef = useRef(null);
+  const sessionIdRef = useRef(null);
 
   // States
   const [isActive, setIsActive] = useState(false);
@@ -79,11 +80,14 @@ export default function Translate() {
 
       // 2. Establish WebSocket connection
       // Construct WS query params: user_id and session_id
+      const sessionId = Math.random().toString(36).substring(7);
+      sessionIdRef.current = sessionId;
+
       const queryParams = new URLSearchParams();
       if (user) queryParams.append('user_id', user.id);
-      queryParams.append('session_id', Math.random().toString(36).substring(7));
+      queryParams.append('session_id', sessionId);
 
-      const wsUrl = `${WS_BASE_URL}/ws/recognize?${queryParams.toString()}`;
+      const wsUrl = `${HF_WS_BASE_URL}/ws/recognize?${queryParams.toString()}`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
@@ -127,9 +131,17 @@ export default function Translate() {
           setBufferedFrames(0);
           setStatus('READY');
 
-          // Refresh database history
+          // Sync recognition history to backend database via REST API
           if (user) {
-            fetchHistory();
+            apiFetch(`/api/history/record?sign_label=${encodeURIComponent(recognizedSignLower)}&confidence=${data.confidence}&session_id=${sessionIdRef.current}`, {
+              method: 'POST'
+            })
+            .then(() => {
+              fetchHistory();
+            })
+            .catch(err => {
+              console.error('Failed to sync history to backend:', err);
+            });
           }
         } else if (data.type === 'error') {
           setErrorMsg(data.message);

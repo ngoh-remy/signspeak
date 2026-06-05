@@ -170,7 +170,7 @@ def preprocess_dataset():
 
     with mp_holistic.Holistic(
         static_image_mode=False,
-        model_complexity=1,
+        model_complexity=2,        # Higher accuracy landmark detection (was 1)
         smooth_landmarks=True,
         min_detection_confidence=0.5,
         min_tracking_confidence=0.5
@@ -209,6 +209,20 @@ def preprocess_dataset():
     print(f"  Skipped:   {stats['skipped']} videos")
     print(f"  Total:     {stats['total_videos']} videos")
     print(f"  Output:    {OUTPUT_PATH}")
+
+    # Per-class summary — helps identify which signs need more recordings
+    print("\nSamples per class (non-augmented):")
+    for sign in available_signs:
+        sign_dir = os.path.join(OUTPUT_PATH, sign)
+        if os.path.isdir(sign_dir):
+            count = len([f for f in os.listdir(sign_dir)
+                         if f.endswith(".npy") and "_aug" not in f])
+            bar = "|" * (count // 2)
+            flag = "  [LOW] consider recording more" if count < 15 else ""
+            print(f"  {sign:<20} {count:>3} {bar}{flag}")
+    print("\nNext steps:")
+    print("  1. python augment.py    <- multiply data 5x")
+    print("  2. python train.py      <- retrain model")
 
 
 if __name__ == "__main__":
