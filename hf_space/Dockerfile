@@ -17,10 +17,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt /code/requirements.txt
 RUN pip install --no-cache-dir -r /code/requirements.txt
 
-# Pre-download MediaPipe Holistic model files (as root user during build time)
-# to prevent Permission Denied errors when running as non-root user 1000
-RUN python -c "import mediapipe as mp; mp.solutions.holistic.Holistic(model_complexity=2)"
-
 # Copy the rest of the application files to the container
 COPY --chown=user:user . /code
 

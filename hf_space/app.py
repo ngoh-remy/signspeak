@@ -80,7 +80,7 @@ async def websocket_recognize(websocket: WebSocket):
                     "timestamp": datetime.utcnow().isoformat(),
                 })
             else:
-                frames_buffered = len(recognizer.sequence_buffer)
+                frames_buffered = recognizer.get_buffer_size()
                 await websocket.send_json({
                     "type": "processing",
                     "frames_buffered": frames_buffered,
