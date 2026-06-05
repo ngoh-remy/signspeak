@@ -4,6 +4,7 @@ from datetime import datetime
 import uuid
 import os
 import sys
+import asyncio
 
 # Ensure current directory is in path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -54,7 +55,6 @@ async def websocket_recognize(websocket: WebSocket):
     # and drop frames when the server is busy processing the previous one.
     lock = asyncio.Lock()
 
-    import asyncio
     try:
         # Check simulation status at start of websocket connection
         from inference import SIMULATION_MODE, SIMULATION_REASON
