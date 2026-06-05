@@ -33,7 +33,7 @@ from typing import Optional, Tuple
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 
-MODEL_PATH   = os.path.join(os.path.dirname(__file__), "best_model.keras")
+MODEL_PATH   = os.path.join(os.path.dirname(__file__), "best_model.h5")
 ENCODER_PATH = os.path.join(os.path.dirname(__file__), "label_encoder.pkl")
 
 IMG_SIZE     = 64    # Must match training: 64×64
