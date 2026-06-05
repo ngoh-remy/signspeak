@@ -50,13 +50,28 @@ async def websocket_recognize(websocket: WebSocket):
         "session_id": session_id,
     })
 
+    # Initialize a lock to prevent concurrent MediaPipe executions
+    # and drop frames when the server is busy processing the previous one.
+    lock = asyncio.Lock()
+
+    import asyncio
     try:
+        # Check simulation status at start of websocket connection
+        from inference import SIMULATION_MODE, SIMULATION_REASON
+        print(f"[*] Connection received. Active Engine Status: {'SIMULATION' if SIMULATION_MODE else 'REAL-INFERENCE'} (Reason: {SIMULATION_REASON})")
+        
         while True:
             # Receive video frame bytes from the React client
             frame_bytes = await websocket.receive_bytes()
             
-            # Process the frame through the LSTM + MediaPipe pipeline
-            result = recognizer.process_frame(frame_bytes)
+            # If the inference engine is currently busy, drop this frame
+            # to prevent backpressure, memory growth, and buffer lag.
+            if lock.locked():
+                continue
+                
+            async with lock:
+                # Process the frame in a worker thread to keep the event loop responsive
+                result = await asyncio.to_thread(recognizer.process_frame, frame_bytes)
 
             if result is not None:
                 sign_label, confidence = result

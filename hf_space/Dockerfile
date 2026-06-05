@@ -1,5 +1,8 @@
 FROM python:3.11-slim
 
+# Force Python stdout/stderr to be unbuffered (immediate logging)
+ENV PYTHONUNBUFFERED=1
+
 # Create a non-root user (Hugging Face Spaces runs as user 1000)
 RUN useradd -m -u 1000 user
 WORKDIR /code
