@@ -23,7 +23,7 @@ export default function Translate() {
   const [isActive, setIsActive] = useState(false);
   const [status, setStatus] = useState('OFFLINE'); 
   const [bufferedFrames, setBufferedFrames] = useState(0);
-  const [maxFrames] = useState(30);
+  const [maxFrames] = useState(20);
   const [predictions, setPredictions] = useState([]); // List of current session's recognized signs
   const [sentenceTokens, setSentenceTokens] = useState([]); // Array of raw sign tokens
   const [lastPrediction, setLastPrediction] = useState(null); // { rawSign, confidence, timestamp }
@@ -103,7 +103,7 @@ export default function Translate() {
           setStatus('READY');
         } else if (data.type === 'processing') {
           setBufferedFrames(data.frames_buffered);
-          if (data.frames_buffered > 0 && data.frames_buffered < 30) {
+          if (data.frames_buffered > 0 && data.frames_buffered < 20) {
             setStatus('PROCESSING');
           } else if (data.frames_buffered === 0) {
             setStatus('READY');
@@ -180,7 +180,7 @@ export default function Translate() {
             }
           }, 'image/jpeg', 0.6); // 60% quality compress for bandwidth efficiency
         }
-      }, 50); // 20 FPS (50ms interval) — fills the 30-frame buffer in ~1.5s instead of 3s
+      }, 100); // 10 FPS — do NOT increase this; faster rates cause MediaPipe timestamp ordering crashes
 
     } catch (err) {
       console.error(err);

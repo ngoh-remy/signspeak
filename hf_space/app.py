@@ -82,12 +82,12 @@ async def websocket_recognize(websocket: WebSocket):
                     "timestamp": datetime.utcnow().isoformat(),
                 })
             else:
-                # Accumulating frames to build the sequence of 30
+                # Accumulating frames to build the sequence (predicts at 20 frames)
                 frames_buffered = len(recognizer.sequence_buffer)
                 await websocket.send_json({
                     "type": "processing",
                     "frames_buffered": frames_buffered,
-                    "frames_needed": 30,
+                    "frames_needed": 20,
                 })
     except WebSocketDisconnect:
         print(f"WebSocket disconnected (session: {session_id})")

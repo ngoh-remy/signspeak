@@ -32,7 +32,8 @@ from typing import Optional, Tuple
 
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "model.h5")
 LABELS_PATH = os.path.join(os.path.dirname(__file__), "labels.json")
-SEQUENCE_LENGTH = 30
+SEQUENCE_LENGTH = 30    # Buffer max size — model was trained on 30-frame sequences
+PREDICT_AT_FRAMES = 20  # Trigger prediction after only 20 frames (~2s), then pad to 30
 CONFIDENCE_THRESHOLD = 0.75  # Set to 0.75 to filter out idle hands/noise and only predict confident signs
 
 # ─── Dependency Resilience Checks ─────────────────────────────────────────────
@@ -574,8 +575,8 @@ class SignRecognizer:
             # Simulate frame sequence buffer progress
             self.sequence_buffer.append(1)
             
-            # Predict once buffer hits SEQUENCE_LENGTH (30 frames)
-            if len(self.sequence_buffer) < SEQUENCE_LENGTH:
+            # Predict once buffer hits PREDICT_AT_FRAMES (20 frames)
+            if len(self.sequence_buffer) < PREDICT_AT_FRAMES:
                 return None
                 
             self.sequence_buffer.clear()
@@ -602,11 +603,17 @@ class SignRecognizer:
             keypoints = extract_keypoints(results)
             self.sequence_buffer.append(keypoints)
 
-            if len(self.sequence_buffer) < SEQUENCE_LENGTH:
+            if len(self.sequence_buffer) < PREDICT_AT_FRAMES:
                 return None
 
             # Run Deep Learning Sequence Prediction
-            sequence = np.array(list(self.sequence_buffer), dtype=np.float32)
+            # Pad the 20-frame capture to 30 frames by repeating the last frame.
+            # This lets the model receive its expected shape while the user only
+            # needs to hold the sign for ~2 seconds instead of 3 seconds.
+            raw = list(self.sequence_buffer)
+            last_frame = raw[-1]
+            padding = [last_frame] * (SEQUENCE_LENGTH - len(raw))
+            sequence = np.array(raw + padding, dtype=np.float32)
             sequence = np.expand_dims(sequence, axis=0)  # Shape (1, 30, 1662)
 
             predictions = self.model.predict(sequence, verbose=0)[0]
