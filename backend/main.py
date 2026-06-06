@@ -67,14 +67,17 @@ CORS_HEADERS = {
 async def cors_middleware(request: Request, call_next):
     origin = request.headers.get("origin", "")
 
+    # Fallback to the production website if origin is stripped (common on mobile browsers)
+    allowed_origin = origin if origin else "https://signspeak2.vercel.app"
+
     # Handle OPTIONS preflight — must return 200 with CORS headers immediately
     if request.method == "OPTIONS":
-        headers = {**CORS_HEADERS, "Access-Control-Allow-Origin": origin or "*"}
+        headers = {**CORS_HEADERS, "Access-Control-Allow-Origin": allowed_origin}
         return Response(status_code=200, headers=headers)
 
     # For all other requests, process normally then add CORS headers
     response = await call_next(request)
-    response.headers["Access-Control-Allow-Origin"] = origin or "*"
+    response.headers["Access-Control-Allow-Origin"] = allowed_origin
     for key, value in CORS_HEADERS.items():
         response.headers[key] = value
     return response
