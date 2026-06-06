@@ -1,7 +1,8 @@
 /* API configuration */
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+export const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').trim();
 export const WS_BASE_URL = API_BASE_URL.replace('http', 'ws');
-export const HF_WS_BASE_URL = import.meta.env.VITE_HF_WS_URL || WS_BASE_URL;
+export const HF_WS_BASE_URL = (import.meta.env.VITE_HF_WS_URL || WS_BASE_URL).trim();
+
 
 
 /* API helper with auth */
