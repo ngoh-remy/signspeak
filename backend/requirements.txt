@@ -14,4 +14,9 @@ email-validator==2.1.0
 pytest
 pytest-asyncio
 httpx<0.28.0
+tensorflow==2.15.0
+opencv-python-headless==4.8.1.78
+numpy==1.24.3
+scikit-learn
+
 

@@ -36,6 +36,10 @@ from routes import router
 AI_MODEL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "Ai_model"))
 sys.path.insert(0, AI_MODEL_PATH)
 
+import asyncio
+from inference import recognizer
+
+
 # ─── FastAPI App Setup ────────────────────────────────────────────────────────
 
 app = FastAPI(
@@ -95,6 +99,15 @@ async def startup_event():
     # Create database tables if they don't exist
     create_tables()
     print("Database tables ready.")
+    
+    # Load ML inference engine
+    print("Loading local inference model...")
+    try:
+        recognizer.load()
+        print("Local inference model loaded successfully.")
+    except Exception as e:
+        print(f"Error loading local inference model: {e}")
+
 
 
 @app.on_event("shutdown")
@@ -114,3 +127,69 @@ def root():
         "docs": "/api/docs",
         "health": "/api/health",
     }
+
+
+# ─── WebSocket Inference Route ────────────────────────────────────────────────
+
+@app.websocket("/ws/recognize")
+async def websocket_recognize(websocket: WebSocket):
+    await websocket.accept()
+    session_id = str(uuid.uuid4())
+
+    # Reset frame vote buffer for a clean session.
+    await asyncio.to_thread(recognizer.new_session)
+
+    await websocket.send_json({
+        "type": "connected",
+        "message": "SignSpeak local inference engine ready.",
+        "session_id": session_id,
+    })
+
+    # Lock prevents concurrent model calls; drops frames when busy.
+    lock = asyncio.Lock()
+
+    try:
+        from inference import SIMULATION_MODE, SIMULATION_REASON
+        print(f"[*] Connection received. Active Engine Status: {'SIMULATION' if SIMULATION_MODE else 'REAL-INFERENCE'} (Reason: {SIMULATION_REASON})")
+        
+        while True:
+            frame_bytes = await websocket.receive_bytes()
+            
+            # Drop frames if inference is still running to prevent backpressure.
+            if lock.locked():
+                continue
+                
+            async with lock:
+                result = await asyncio.to_thread(recognizer.process_frame, frame_bytes)
+
+            if result is not None:
+                sign_label, confidence = result
+                await websocket.send_json({
+                    "type": "recognition",
+                    "sign": sign_label,
+                    "confidence": round(confidence, 4),
+                    "timestamp": datetime.utcnow().isoformat(),
+                })
+            else:
+                frames_buffered = recognizer.get_buffer_size()
+                await websocket.send_json({
+                    "type": "processing",
+                    "frames_buffered": frames_buffered,
+                    "frames_needed": 20,
+                })
+    except WebSocketDisconnect:
+        print(f"WebSocket disconnected (session: {session_id})")
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+        try:
+            await websocket.send_json({
+                "type": "error",
+                "message": f"Inference engine error: {str(e)}",
+            })
+        except Exception:
+            pass
+    finally:
+        # Pre-warm for the next connection attempt
+        asyncio.create_task(asyncio.to_thread(recognizer.new_session))
+        print(f"[+] Session {session_id} cleaned up.")
+
