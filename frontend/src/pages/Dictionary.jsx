@@ -6,14 +6,9 @@ import './Dictionary.css';
 
 // Pre-defined subset of key demo-quality vocabulary with academic/technical descriptions
 const TRAINED_WORDS = [
-  "hello", "thank you", "please", "sorry", "yes", "no", "help",
-  "love", "good", "bad", "name", "what", "how", "where", "who",
-  "want", "need", "like", "eat", "drink", "go", "come", "stop",
-  "wait", "understand", "again", "finish", "more", "less", "big",
-  "small", "happy", "sad", "angry", "sick", "pain", "doctor",
-  "hospital", "school", "home", "family", "mother", "father",
-  "brother", "sister", "friend", "man", "woman", "child",
-  "water"
+  "yes", "no", "stop", "help", "cousin", "friend", "drink", 
+  "school", "who", "give", "man", "room", "what", "take", 
+  "come", "go", "short", "environment", "apple", "big"
 ];
 
 // Dynamically generate the demo signs from the translations

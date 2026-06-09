@@ -1,79 +1,43 @@
-"""
-SignSpeak - MobileNetV2 Inference Module
-=========================================
-Replaces the old MediaPipe + LSTM approach entirely.
-
-How this works (majority voting):
-  1. The frontend sends video frames via WebSocket (same as before).
-  2. For each received frame:
-     - Resize to 64x64 grayscale
-     - Convert to 3-channel RGB (MobileNetV2 expects 3 channels)
-     - Run MobileNetV2.predict() → probability vector for each class
-     - Add to a rolling vote buffer (last N_VOTES frame predictions)
-  3. After N_VOTES frames are accumulated, sum all probability vectors.
-  4. The class with the highest total score wins.
-  5. If the winning confidence is above CONFIDENCE_THRESHOLD, emit prediction.
-  6. Buffer resets (for UX progress bar) after a confident prediction.
-
-Why this is better than LSTM + MediaPipe:
-  - No MediaPipe dependency → no timestamp crashes → no freezing
-  - Frame-by-frame prediction → consistent timing, no 30-frame wait
-  - Majority voting → robust against bad/blurry frames
-  - Transfer learning → works well on smaller datasets
-  - Per-frame inference takes ~30ms on CPU vs ~400ms for MediaPipe
-"""
-
 import os
 import cv2
-import json
 import pickle
 import numpy as np
-from collections import deque
 from typing import Optional, Tuple
+import mediapipe as mp
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 
-MODEL_PATH   = os.path.join(os.path.dirname(__file__), "best_model.h5")
-ENCODER_PATH = os.path.join(os.path.dirname(__file__), "label_encoder.pkl")
+MODEL_PATH   = os.path.join(os.path.dirname(__file__), "best_model_lstm.keras")
+ENCODER_PATH = os.path.join(os.path.dirname(__file__), "label_encoder_lstm.pkl")
 
-IMG_SIZE     = 64    # Must match training: 64×64
-N_VOTES      = 20    # Accumulate 20 frame predictions before deciding (~2 seconds at 10 FPS)
-CONFIDENCE_THRESHOLD = 0.35  # Require 35% of accumulated vote probability to emit
+SEQ_LENGTH = 30
+CONFIDENCE_THRESHOLD = 0.50
 
-# ─── Dependency Checks ────────────────────────────────────────────────────────
-
-SIMULATION_MODE   = False
+SIMULATION_MODE = False
 SIMULATION_REASON = ""
 
 try:
-    import numpy as np
+    import tensorflow as tf
 except ImportError:
-    SIMULATION_MODE   = True
-    SIMULATION_REASON = "numpy not installed"
+    SIMULATION_MODE = True
+    SIMULATION_REASON = "tensorflow not installed"
 
-try:
-    import cv2
-except ImportError:
-    cv2 = None
-    SIMULATION_MODE   = True
-    SIMULATION_REASON = "opencv not installed"
-
+def extract_keypoints(results):
+    pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else np.zeros(33*4)
+    lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else np.zeros(21*3)
+    rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else np.zeros(21*3)
+    return np.concatenate([pose, lh, rh])
 
 class SignRecognizer:
-    """
-    Real-time sign language recognizer using MobileNetV2 + majority voting.
-    No MediaPipe. No LSTM sequences. No timestamp issues.
-    """
-
     def __init__(self):
-        self.model         = None
+        self.model = None
         self.label_encoder = None
-        self.labels        = []
-        self.vote_buffer   = deque(maxlen=N_VOTES)  # Rolling window of probability vectors
-        self._loaded       = False
+        self.labels = []
+        self.sequence = []
+        self._loaded = False
+        self.holistic = None
 
     def load(self):
-        """Load model and label encoder. Called once at server startup."""
         if self._loaded:
             return
 
@@ -81,122 +45,117 @@ class SignRecognizer:
 
         if SIMULATION_MODE:
             print(f"[* WARNING *] SignSpeak starting in SIMULATION MODE: {SIMULATION_REASON}")
-            self.labels  = ["hello", "thank you", "please", "yes", "no", "help", "sorry", "love", "good", "bad"]
+            self.labels = ["hello", "thank you", "please", "yes", "no", "help"]
             self._loaded = True
             return
 
-        if not os.path.exists(MODEL_PATH):
-            print(f"[* INFO *] best_model.keras not found at {MODEL_PATH}. Activating Simulation Mode.")
-            SIMULATION_MODE   = True
-            SIMULATION_REASON = "best_model.keras not found — run retrain_mobilenet.py first"
-            self.labels  = ["hello", "thank you", "please", "yes", "no"]
-            self._loaded = True
-            return
-
-        if not os.path.exists(ENCODER_PATH):
-            print(f"[* INFO *] label_encoder.pkl not found at {ENCODER_PATH}. Activating Simulation Mode.")
-            SIMULATION_MODE   = True
-            SIMULATION_REASON = "label_encoder.pkl not found — run retrain_mobilenet.py first"
-            self.labels  = ["hello", "thank you", "please", "yes", "no"]
+        if not os.path.exists(MODEL_PATH) or not os.path.exists(ENCODER_PATH):
+            SIMULATION_MODE = True
+            SIMULATION_REASON = "Model or encoder not found"
+            self.labels = ["hello", "thank you", "yes", "no"]
             self._loaded = True
             return
 
         try:
-            from tensorflow.keras.models import load_model as keras_load
-            self.model = keras_load(MODEL_PATH, compile=False)
-            print(f"[+] MobileNetV2 model loaded: {MODEL_PATH}")
-
+            self.model = tf.keras.models.load_model(MODEL_PATH)
             with open(ENCODER_PATH, "rb") as f:
                 self.label_encoder = pickle.load(f)
             self.labels = list(self.label_encoder.classes_)
-            print(f"[+] Label encoder loaded: {len(self.labels)} classes")
-            print(f"[+] Classes: {self.labels}")
-
+            
+            self.holistic = mp.solutions.holistic.Holistic(
+                min_detection_confidence=0.5,
+                min_tracking_confidence=0.5
+            )
+            
             self._loaded = True
-
+            print(f"[+] LSTM model loaded with {len(self.labels)} classes.")
         except Exception as e:
-            print(f"[* WARNING *] Failed to load model: {e}. Activating Simulation Mode.")
-            SIMULATION_MODE   = True
-            SIMULATION_REASON = f"Model load error: {str(e)}"
-            self.labels  = ["hello", "thank you", "please", "yes", "no"]
+            print(f"Error loading model: {e}")
+            SIMULATION_MODE = True
+            SIMULATION_REASON = str(e)
             self._loaded = True
 
-    def process_frame(self, frame_bytes: bytes) -> Optional[Tuple[str, float]]:
-        """
-        Process one JPEG frame. Add its per-class probabilities to the vote buffer.
-        Once N_VOTES frames are accumulated, perform majority voting and return
-        a prediction if confident enough.
-
-        Args:
-            frame_bytes: Raw JPEG bytes from the frontend webcam.
-
-        Returns:
-            (sign_label, confidence) if a confident prediction is ready, else None.
-        """
+    def process_keypoints(self, keypoints: list) -> Optional[Tuple[str, float]]:
         if not self._loaded:
             self.load()
 
         if SIMULATION_MODE:
-            self.vote_buffer.append(1)
-            if len(self.vote_buffer) < N_VOTES:
-                return None
-            self.vote_buffer.clear()
-            import random
-            return random.choice(self.labels), random.uniform(0.75, 0.99)
-
-        if cv2 is None:
+            self.sequence.append(1)
+            if len(self.sequence) >= SEQ_LENGTH:
+                self.sequence = []
+                import random
+                return random.choice(self.labels), random.uniform(0.75, 0.99)
             return None
 
-        try:
-            # Decode JPEG → numpy
-            nparr = np.frombuffer(frame_bytes, np.uint8)
-            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            if frame is None:
-                return None
+        # keypoints is expected to be a 258-length flat list of floats from the frontend
+        if len(keypoints) != 258:
+            print(f"Warning: Expected 258 keypoints, got {len(keypoints)}")
+            return None
 
-            # Resize to 64×64 grayscale, then convert to 3-channel RGB
-            gray      = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            gray      = cv2.resize(gray, (IMG_SIZE, IMG_SIZE))
-            gray_norm = gray.astype(np.float32) / 255.0
-            rgb       = np.repeat(gray_norm.reshape(IMG_SIZE, IMG_SIZE, 1), 3, axis=-1)
-            batch     = np.expand_dims(rgb, axis=0)  # Shape: (1, 64, 64, 3)
+        self.sequence.append(np.array(keypoints))
+        self.sequence = self.sequence[-SEQ_LENGTH:]
+        
+        if len(self.sequence) == SEQ_LENGTH:
+            try:
+                from normalize import normalize_keypoints
+                normalized_seq = normalize_keypoints(np.array(self.sequence))
+                res = self.model.predict(np.expand_dims(normalized_seq, axis=0), verbose=0)[0]
+                best_class = int(np.argmax(res))
+                confidence = float(res[best_class])
+                
+                if confidence >= CONFIDENCE_THRESHOLD:
+                    self.sequence = [] # Clear buffer
+                    return self.labels[best_class], confidence
+            except Exception as e:
+                print(f"Prediction error: {e}")
+                
+        return None
 
-            # Run MobileNetV2 — fast! (~30ms on CPU)
-            probs = self.model.predict(batch, verbose=0)[0]  # Shape: (N_CLASSES,)
-            self.vote_buffer.append(probs)
+    def process_frame(self, frame_bytes: bytes) -> Optional[Tuple[str, float]]:
+        if not self._loaded:
+            self.load()
 
-            # Wait until we have N_VOTES frames before deciding
-            if len(self.vote_buffer) < N_VOTES:
-                return None
+        if SIMULATION_MODE:
+            self.sequence.append(1)
+            if len(self.sequence) >= SEQ_LENGTH:
+                self.sequence = []
+                import random
+                return random.choice(self.labels), random.uniform(0.75, 0.99)
+            return None
 
-            # Majority voting: sum all probability vectors
-            votes         = np.sum(list(self.vote_buffer), axis=0)  # (N_CLASSES,)
-            total_votes   = np.sum(votes)
-            normalized    = votes / total_votes                       # Normalize to 0-1
-            best_class    = int(np.argmax(normalized))
-            confidence    = float(normalized[best_class])
+        nparr = np.frombuffer(frame_bytes, np.uint8)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if frame is None:
+            return None
 
-            if confidence >= CONFIDENCE_THRESHOLD:
-                sign_label = self.labels[best_class]
-                # Clear vote buffer so progress bar resets for next sign
-                self.vote_buffer.clear()
-                return sign_label, confidence
-
-        except Exception as e:
-            print(f"Error in MobileNetV2 inference: {e}")
-
+        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        image.flags.writeable = False
+        results = self.holistic.process(image)
+        
+        keypoints = extract_keypoints(results)
+        self.sequence.append(keypoints)
+        self.sequence = self.sequence[-SEQ_LENGTH:]
+        
+        if len(self.sequence) == SEQ_LENGTH:
+            try:
+                from normalize import normalize_keypoints
+                normalized_seq = normalize_keypoints(np.array(self.sequence))
+                res = self.model.predict(np.expand_dims(normalized_seq, axis=0), verbose=0)[0]
+                best_class = int(np.argmax(res))
+                confidence = float(res[best_class])
+                
+                if confidence >= CONFIDENCE_THRESHOLD:
+                    self.sequence = [] # Clear buffer
+                    return self.labels[best_class], confidence
+            except Exception as e:
+                print(f"Prediction error: {e}")
+                
         return None
 
     def new_session(self):
-        """
-        Reset for a new WebSocket session.
-        No MediaPipe to recreate — just clear the vote buffer.
-        """
-        self.vote_buffer.clear()
-        print("[+] Vote buffer cleared for new session.")
-
+        self.sequence = []
+        
     def reset(self):
-        """Legacy alias."""
         self.new_session()
 
     def get_all_labels(self):
@@ -205,8 +164,6 @@ class SignRecognizer:
         return self.labels
 
     def get_buffer_size(self):
-        return len(self.vote_buffer)
+        return len(self.sequence)
 
-
-# Singleton used by the FastAPI server
 recognizer = SignRecognizer()

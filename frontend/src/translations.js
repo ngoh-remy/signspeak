@@ -206,7 +206,21 @@ export const translations = {
       "sister": "Sister",
       "man": "Man",
       "woman": "Woman",
+      
+      "cousin": "Cousin",
+      "give": "Give",
+      "room": "Room",
+      "take": "Take",
+      "short": "Short",
+      "environment": "Environment",
       "child": "Child",
+      "cousin": "Cousin",
+      "give": "Give",
+      "room": "Room",
+      "take": "Take",
+      "short": "Short",
+      "environment": "Environment",
+
     },
     dictionarySigns: {
       "hello": { category: "Salutation", complexity: "Low", description: "Hand moves from forehead outward, simulating a polite salute. Used as standard introductory gesture." },
@@ -324,7 +338,21 @@ export const translations = {
       "sister": { category: "Person", complexity: "High", description: "Draw thumb of active 'L' hand along jawline, then bring down to rest on inactive 'L' hand." },
       "man": { category: "Person", complexity: "Medium", description: "Touch thumb of open hand to forehead, then to chest." },
       "woman": { category: "Person", complexity: "Medium", description: "Touch thumb of open hand to chin, then to chest." },
-      "child": { category: "Person", complexity: "Low", description: "Pat imaginary heads of children, moving hand downward and outward." },
+      
+      "cousin": { category: "Family", complexity: "Medium", description: "Shake 'C' handshape by the side of the head." },
+      "give": { category: "Action", complexity: "Medium", description: "Hold flattened 'O' hands palms up, move them forward and outward." },
+      "room": { category: "Noun", complexity: "Medium", description: "Form a box shape with flat hands, moving them to show four walls." },
+      "take": { category: "Action", complexity: "Medium", description: "Reach out with open hands, grab imaginary object, and pull it toward you." },
+      "short": { category: "Description", complexity: "Low", description: "Hold flat hand palm down, lower it to indicate short height." },
+      "environment": { category: "Noun", complexity: "High", description: "Hold inactive hand flat, circle active 'E' handshape around it." },
+"child": { category: "Person", complexity: "Low", description: "Pat imaginary heads of children, moving hand downward and outward." },
+      "cousin": { category: "Family", complexity: "Medium", description: "Shake 'C' handshape by the side of the head." },
+      "give": { category: "Action", complexity: "Medium", description: "Hold flattened 'O' hands palms up, move them forward and outward." },
+      "room": { category: "Noun", complexity: "Medium", description: "Form a box shape with flat hands, moving them to show four walls." },
+      "take": { category: "Action", complexity: "Medium", description: "Reach out with open hands, grab imaginary object, and pull it toward you." },
+      "short": { category: "Description", complexity: "Low", description: "Hold flat hand palm down, lower it to indicate short height." },
+      "environment": { category: "Noun", complexity: "High", description: "Hold inactive hand flat, circle active 'E' handshape around it." },
+
     }
   },
   fr: {
@@ -534,7 +562,21 @@ export const translations = {
       "sister": "Sœur",
       "man": "Homme",
       "woman": "Femme",
+      
+      "cousin": "Cousin",
+      "give": "Donner",
+      "room": "Pièce",
+      "take": "Prendre",
+      "short": "Court",
+      "environment": "Environnement",
       "child": "Enfant",
+      "cousin": "Cousin",
+      "give": "Donner",
+      "room": "Pièce",
+      "take": "Prendre",
+      "short": "Court",
+      "environment": "Environnement",
+
     },
     dictionarySigns: {
       "hello": { category: "Salutation", complexity: "Faible", description: "La main part du front vers l'extérieur, simulant un salut poli. Utilisé comme geste d'introduction standard." },
@@ -649,7 +691,14 @@ export const translations = {
       "sister": { category: "Personne", complexity: "Élevée", description: "Tirez le pouce de la main active en \'L\' le long de la mâchoire, puis abaissez-la pour la poser sur la main inactive en \'L\'." },
       "man": { category: "Personne", complexity: "Moyenne", description: "Touchez le pouce de la main ouverte sur le front, puis sur la poitrine." },
       "woman": { category: "Personne", complexity: "Moyenne", description: "Touchez le pouce de la main ouverte sur le menton, puis sur la poitrine." },
-      "child": { category: "Personne", complexity: "Faible", description: "Caressez la tête d\'enfants imaginaires, en déplaçant la main vers le bas et vers l\'extérieur." },
+      
+      "cousin": { category: "Famille", complexity: "Moyenne", description: "Secouez la forme de main 'C' sur le côté de la tête." },
+      "give": { category: "Action", complexity: "Moyenne", description: "Tenez les mains en 'O' aplaties paumes vers le haut, déplacez-les vers l'avant et vers l'extérieur." },
+      "room": { category: "Nom", complexity: "Moyenne", description: "Formez une boîte avec les mains plates, en les déplaçant pour montrer quatre murs." },
+      "take": { category: "Action", complexity: "Moyenne", description: "Tendez les mains ouvertes, attrapez un objet imaginaire et tirez-le vers vous." },
+      "short": { category: "Description", complexity: "Faible", description: "Tenez la main plate paume vers le bas, abaissez-la pour indiquer une petite taille." },
+      "environment": { category: "Nom", complexity: "Élevée", description: "Tenez la main inactive plate, faites tourner la main active en forme de 'E' autour d'elle." },
+"child": { category: "Personne", complexity: "Faible", description: "Caressez la tête d\'enfants imaginaires, en déplaçant la main vers le bas et vers l\'extérieur." },
     }
   }
 };

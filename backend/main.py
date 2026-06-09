@@ -153,30 +153,31 @@ async def websocket_recognize(websocket: WebSocket):
         print(f"[*] Connection received. Active Engine Status: {'SIMULATION' if SIMULATION_MODE else 'REAL-INFERENCE'} (Reason: {SIMULATION_REASON})")
         
         while True:
-            frame_bytes = await websocket.receive_bytes()
+            # We now receive JSON payload instead of raw JPEG bytes
+            data = await websocket.receive_json()
             
-            # Drop frames if inference is still running to prevent backpressure.
-            if lock.locked():
-                continue
+            if data.get("type") == "keypoints":
+                keypoints_array = data.get("data", [])
                 
-            async with lock:
-                result = await asyncio.to_thread(recognizer.process_frame, frame_bytes)
+                # We do not need a lock or to drop frames anymore because list manipulation
+                # and array appending is extremely fast. We just push it synchronously.
+                result = await asyncio.to_thread(recognizer.process_keypoints, keypoints_array)
 
-            if result is not None:
-                sign_label, confidence = result
-                await websocket.send_json({
-                    "type": "recognition",
-                    "sign": sign_label,
-                    "confidence": round(confidence, 4),
-                    "timestamp": datetime.utcnow().isoformat(),
-                })
-            else:
-                frames_buffered = recognizer.get_buffer_size()
-                await websocket.send_json({
-                    "type": "processing",
-                    "frames_buffered": frames_buffered,
-                    "frames_needed": 20,
-                })
+                if result is not None:
+                    sign_label, confidence = result
+                    await websocket.send_json({
+                        "type": "recognition",
+                        "sign": sign_label,
+                        "confidence": round(confidence, 4),
+                        "timestamp": datetime.utcnow().isoformat(),
+                    })
+                else:
+                    frames_buffered = recognizer.get_buffer_size()
+                    await websocket.send_json({
+                        "type": "processing",
+                        "frames_buffered": frames_buffered,
+                        "frames_needed": 30,
+                    })
     except WebSocketDisconnect:
         print(f"WebSocket disconnected (session: {session_id})")
     except Exception as e:

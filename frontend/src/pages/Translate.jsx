@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { translations } from '../translations';
 import './Translate.css';
+const Holistic = window.Holistic;
 
 export default function Translate() {
   const { user, language } = useAuth();
@@ -17,13 +18,16 @@ export default function Translate() {
   const streamRef = useRef(null);
   const wsRef = useRef(null);
   const intervalRef = useRef(null);
+  const holisticRef = useRef(null);
+  const reqAnimRef = useRef(null);
   const sessionIdRef = useRef(null);
+  const lastPredictionRef = useRef(null);
 
   // States
   const [isActive, setIsActive] = useState(false);
   const [status, setStatus] = useState('OFFLINE'); 
   const [bufferedFrames, setBufferedFrames] = useState(0);
-  const [maxFrames] = useState(20);
+  const [maxFrames] = useState(30);
   const [predictions, setPredictions] = useState([]); // List of current session's recognized signs
   const [sentenceTokens, setSentenceTokens] = useState([]); // Array of raw sign tokens
   const [lastPrediction, setLastPrediction] = useState(null); // { rawSign, confidence, timestamp }
@@ -103,21 +107,35 @@ export default function Translate() {
           setStatus('READY');
         } else if (data.type === 'processing') {
           setBufferedFrames(data.frames_buffered);
-          if (data.frames_buffered > 0 && data.frames_buffered < 20) {
+          if (data.frames_buffered > 0 && data.frames_buffered < maxFrames) {
             setStatus('PROCESSING');
           } else {
             setStatus('READY');
           }
         } else if (data.type === 'recognition') {
-          // Translate the recognized sign if possible
           const recognizedSignLower = data.sign.toLowerCase();
+
+          // Debounce: prevent the identical sign from repeating within 3 seconds
+          if (lastPredictionRef.current && 
+              lastPredictionRef.current.rawSign === recognizedSignLower && 
+              (Date.now() - lastPredictionRef.current.time < 3000)) {
+            
+            // Just reset the buffer visually and ignore it
+            setBufferedFrames(0);
+            setStatus('READY');
+            return;
+          }
+
+          // Translate the recognized sign if possible
           const translatedSign = signsT[recognizedSignLower] || data.sign;
 
           const pred = {
             rawSign: recognizedSignLower,
             confidence: data.confidence,
-            timestamp: new Date(data.timestamp)
+            timestamp: new Date(data.timestamp),
+            time: Date.now()
           };
+          lastPredictionRef.current = pred;
           setLastPrediction(pred);
           setPredictions(prev => [pred, ...prev]);
 
@@ -161,26 +179,100 @@ export default function Translate() {
       };
 
       // 3. Start drawing and streaming frames
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
 
-      intervalRef.current = setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN && videoRef.current) {
-          // Draw video frame on canvas
-          context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-
-          // Export as JPEG blob and send raw bytes
-          canvas.toBlob((blob) => {
-            if (blob) {
-              blob.arrayBuffer().then((buffer) => {
-                if (ws.readyState === WebSocket.OPEN) {
-                  ws.send(buffer);
-                }
-              });
-            }
-          }, 'image/jpeg', 0.6); // 60% quality compress for bandwidth efficiency
+      // 3. Setup MediaPipe Holistic
+      const holistic = new Holistic({
+        locateFile: (file) => {
+          return `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`;
         }
-      }, 100); // 10 FPS — do NOT increase this; faster rates cause MediaPipe timestamp ordering crashes
+      });
+
+      holistic.setOptions({
+        modelComplexity: 1,
+        smoothLandmarks: true,
+        enableSegmentation: false,
+        smoothSegmentation: false,
+        refineFaceLandmarks: false,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+
+      holistic.onResults((results) => {
+        // Extract exactly 258 keypoints matching the Python backend
+        let pose = new Array(33 * 4).fill(0);
+        if (results.poseLandmarks) {
+          results.poseLandmarks.forEach((res, i) => {
+            pose[i * 4] = res.x;
+            pose[i * 4 + 1] = res.y;
+            pose[i * 4 + 2] = res.z;
+            pose[i * 4 + 3] = res.visibility || 0;
+          });
+        }
+
+        let lh = new Array(21 * 3).fill(0);
+        if (results.leftHandLandmarks) {
+          results.leftHandLandmarks.forEach((res, i) => {
+            lh[i * 3] = res.x;
+            lh[i * 3 + 1] = res.y;
+            lh[i * 3 + 2] = res.z;
+          });
+        }
+
+        let rh = new Array(21 * 3).fill(0);
+        if (results.rightHandLandmarks) {
+          results.rightHandLandmarks.forEach((res, i) => {
+            rh[i * 3] = res.x;
+            rh[i * 3 + 1] = res.y;
+            rh[i * 3 + 2] = res.z;
+          });
+        }
+
+        const keypoints = [...pose, ...lh, ...rh];
+
+        // Send to backend
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ type: 'keypoints', data: keypoints }));
+        }
+      });
+      holisticRef.current = holistic;
+
+      // 4. Send frames to MediaPipe
+      let isProcessing = false;
+      let lastFrameTime = 0;
+      
+      const processVideo = async (time) => {
+        // Throttle to ~15-20 FPS to prevent crashing the backend websocket buffer
+        if (time - lastFrameTime < 50) { 
+          reqAnimRef.current = requestAnimationFrame(processVideo);
+          return;
+        }
+        lastFrameTime = time;
+
+        if (videoRef.current && holisticRef.current && wsRef.current && wsRef.current.readyState === WebSocket.OPEN && !isProcessing) {
+          isProcessing = true;
+          try {
+            // Send current frame to holistic model
+            await holisticRef.current.send({ image: videoRef.current });
+          } catch (error) {
+            console.error("Holistic processing error:", error);
+          } finally {
+            isProcessing = false;
+          }
+        }
+        // Loop
+        reqAnimRef.current = requestAnimationFrame(processVideo);
+      };
+
+      videoRef.current.onloadeddata = async () => {
+        try {
+          await holistic.initialize();
+          console.log("Holistic model initialized successfully.");
+          processVideo();
+        } catch (error) {
+          console.error("Failed to initialize Holistic:", error);
+        }
+      };
+
 
     } catch (err) {
       console.error(err);
@@ -199,6 +291,14 @@ export default function Translate() {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
+    }
+    if (reqAnimRef.current) {
+      cancelAnimationFrame(reqAnimRef.current);
+      reqAnimRef.current = null;
+    }
+    if (holisticRef.current) {
+      holisticRef.current.close();
+      holisticRef.current = null;
     }
 
     if (wsRef.current) {
