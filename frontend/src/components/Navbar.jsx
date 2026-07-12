@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Hand, Menu, X, LogOut, User, BookOpen, Mic, Info, Sun, Moon } from 'lucide-react';
+import { Menu, X, LogOut, User, BookOpen, Mic, Sun, Moon } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { translations } from '../translations';

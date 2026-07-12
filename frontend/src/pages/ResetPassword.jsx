@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
@@ -16,15 +16,8 @@ export default function ResetPassword() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
-  const [error, setError] = useState('');
-  const [tokenError, setTokenError] = useState(false);
-
-  useEffect(() => {
-    if (!token) {
-      setError('Invalid or missing reset token. Please request a new password reset link.');
-      setTokenError(true);
-    }
-  }, [token]);
+  const [error, setError] = useState(!token ? 'Invalid or missing reset token. Please request a new password reset link.' : '');
+  const [tokenError] = useState(!token);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
     DATABASE_URL: str = "sqlite:///./signspeak.db"
     AI_MODEL_DIR: str = "../Ai_model"
-    FRONTEND_URL: str = ""  # Set in production (e.g. https://signspeak.vercel.app)
+    FRONTEND_URL: str = ""  # Set in production 
 
     class Config:
         env_file = ".env"

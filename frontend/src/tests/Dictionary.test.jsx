@@ -26,16 +26,15 @@ describe('Dictionary Component', () => {
     
     // Find the search input and type 'thank you'
     const searchInput = screen.getByPlaceholderText(/Search supported signs/i);
-    fireEvent.change(searchInput, { target: { value: 'thank you' } });
+    fireEvent.change(searchInput, { target: { value: 'apple' } });
     
-    // The list should show 'Thank You' in the sidebar buttons
-    // The sidebar list items have the class dict-list-btn, we can check by Role or by Text
+    // The list should show 'Apple' in the sidebar buttons
     const sidebarButtons = screen.getAllByRole('button');
-    const thankYouBtn = sidebarButtons.find(btn => btn.textContent.includes('Thank You'));
-    expect(thankYouBtn).toBeDefined();
+    const appleBtn = sidebarButtons.find(btn => btn.textContent.includes('Apple'));
+    expect(appleBtn).toBeDefined();
     
-    // "Hello" should not be in the sidebar buttons anymore
-    const helloBtn = sidebarButtons.find(btn => btn.textContent.includes('Hello') && !btn.className.includes('header-button')); // avoid catching arbitrary header buttons if any
-    expect(helloBtn).toBeUndefined();
+    // "Yes" should not be in the sidebar buttons anymore
+    const yesBtn = sidebarButtons.find(btn => btn.textContent.includes('Yes') && !btn.className.includes('header-button'));
+    expect(yesBtn).toBeUndefined();
   });
 });

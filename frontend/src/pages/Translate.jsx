@@ -1,9 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { HF_WS_BASE_URL, apiFetch } from '../api';
 import {
-  Camera, CameraOff, Volume2, VolumeX, RefreshCw, AlertCircle, Play, Square,
-  CheckCircle, History, MessageSquareCode, Sparkles, Send, Trash2, ArrowLeftRight
+  Camera, CameraOff, Volume2, VolumeX, RefreshCw, AlertCircle, Play,
+  History, MessageSquareCode, Sparkles, Trash2, ArrowLeftRight
 } from 'lucide-react';
 import { translations } from '../translations';
 import './Translate.css';
@@ -28,7 +28,6 @@ export default function Translate() {
   const [status, setStatus] = useState('OFFLINE'); 
   const [bufferedFrames, setBufferedFrames] = useState(0);
   const [maxFrames] = useState(30);
-  const [predictions, setPredictions] = useState([]); // List of current session's recognized signs
   const [sentenceTokens, setSentenceTokens] = useState([]); // Array of raw sign tokens
   const [lastPrediction, setLastPrediction] = useState(null); // { rawSign, confidence, timestamp }
   const [isMuted, setIsMuted] = useState(false);
@@ -43,14 +42,14 @@ export default function Translate() {
     }
   }, [user]);
 
-  const fetchHistory = async () => {
+  async function fetchHistory() {
     try {
       const data = await apiFetch('/api/history');
       setHistoryItems((data?.items || []).slice(0, 10));
     } catch (err) {
       console.error('Failed to load history:', err);
     }
-  };
+  }
 
   // Speaks text using Web Speech API
   const speakText = (text) => {
@@ -84,7 +83,7 @@ export default function Translate() {
 
       // 2. Establish WebSocket connection
       // Construct WS query params: user_id and session_id
-      const sessionId = Math.random().toString(36).substring(7);
+      const sessionId = Date.now().toString(36);
       sessionIdRef.current = sessionId;
 
       const queryParams = new URLSearchParams();
@@ -137,7 +136,6 @@ export default function Translate() {
           };
           lastPredictionRef.current = pred;
           setLastPrediction(pred);
-          setPredictions(prev => [pred, ...prev]);
 
           // Update sentence tokens
           setSentenceTokens(prev => [...prev, recognizedSignLower]);
@@ -353,7 +351,6 @@ export default function Translate() {
   const handleClearSentence = () => {
     setSentenceTokens([]);
     setLastPrediction(null);
-    setPredictions([]);
   };
 
   const handleBackspace = () => {

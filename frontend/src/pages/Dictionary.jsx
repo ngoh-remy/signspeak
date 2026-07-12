@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Info, Hand, Layers, AlertCircle, HelpCircle, ArrowRight } from 'lucide-react';
+import { Search, Hand, Layers, AlertCircle, HelpCircle, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { translations } from '../translations';
 import './Dictionary.css';
@@ -135,7 +135,7 @@ export default function Dictionary() {
                       <ul className="tech-bullets">
                         <li><strong>{t.sequenceFrames}:</strong> 30 (1.0 second duration at 30 FPS)</li>
                         <li><strong>{t.keypointFeatures}:</strong> 1,662 features per frame</li>
-                        <li><strong>{t.weightFactor}:</strong> {selectedSign.complexity === 'Low' ? '1.0x (Static translation offset)' : selectedSign.complexity === 'Medium' ? '1.5x (Uni-directional movement)' : '2.0x (Complex double-hand sequence)'}</li>
+                        <li><strong>{t.weightFactor}:</strong> {selectedSign.complexity === 'Low' ? (language === 'fr' ? '1.0x (Décalage statique)' : '1.0x (Static translation offset)') : selectedSign.complexity === 'Medium' ? (language === 'fr' ? '1.5x (Mouvement unidirectionnel)' : '1.5x (Uni-directional movement)') : (language === 'fr' ? '2.0x (Séquence complexe à deux mains)' : '2.0x (Complex double-hand sequence)')}</li>
                       </ul>
                     </div>
                   </div>
