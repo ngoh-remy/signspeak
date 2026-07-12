@@ -115,3 +115,15 @@ npm install
 npm run dev
 ```
 Open: http://localhost:5173
+
+---
+
+## 7. Future Work & Improvements
+
+**Two-Way Communication (Avatar Integration)**
+Currently, the system is a one-way translator (Sign Language ➡️ Spoken/Written Language). A major planned improvement is to implement two-way communication:
+- **Speech-to-Text (STT):** Capturing spoken language from hearing users and converting it to text.
+- **NLP Translation:** Translating the spoken language structure into ASL Gloss syntax.
+- **3D Avatar Rendering:** Using a WebGL/Three.js integrated avatar to visually sign the spoken words back to the deaf or hard-of-hearing user. 
+
+This will establish a complete, bi-directional virtual interpreter experience, removing the need for the non-hearing user to read text.
