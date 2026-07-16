@@ -1,129 +1,131 @@
-# SignSpeak — AI-Powered Sign Language Translation System
+# SignSpeak
 
-## 1. Project Background and Objective
+**Real-time American Sign Language translation in the browser — gesture to text and speech, in English and French.**
 
-For non-verbal and deaf individuals, communication is a constant struggle. Sign language is their native tongue, yet less than 1% of the hearing population understands it. This creates immense barriers in essential public services — hospitals, schools, courts, banks, and government offices. Human sign language interpreters are incredibly expensive and in extremely short supply.
+[Live demo](https://signspeak2.vercel.app) · Built with MediaPipe Holistic + TensorFlow LSTM + FastAPI + React
 
-**SignSpeak** is an automated, AI-powered system that addresses this problem. It captures American Sign Language (ASL) gestures from any basic webcam, extracts bodily joint positions (landmarks), classifies the movement sequence using a Recurrent Neural Network (LSTM), and immediately synthesizes it into written text and natural spoken voice in the browser. The system supports both **English** and **French** output for wider accessibility.
+<!-- REPLACE THIS LINE with your demo GIF:  ![SignSpeak demo](docs/demo.gif)  -->
 
 ---
 
-## 2. Global System Architecture
+## The problem
 
-To achieve near-zero latency, the system is designed in a highly modular, decoupled fashion:
+Sign language is the native tongue of deaf and non-verbal people, yet under 1% of the hearing population understands it. In hospitals, schools, courts and government offices this becomes a hard barrier — and human interpreters are scarce and expensive.
 
+SignSpeak captures ASL gestures from any basic webcam, extracts skeletal landmarks, classifies the movement sequence with a recurrent neural network, and speaks the result aloud — with no specialised hardware.
+
+## How it works
+
+```mermaid
+flowchart TD
+    A[Webcam capture<br/>React + Vite] -->|JPEG blobs over WebSocket| B[FastAPI server]
+    B --> C[MediaPipe Holistic<br/>543 landmarks → 1662 features]
+    C --> D[Frame buffer<br/>30 frames ≈ 3s]
+    D --> E[CNN-LSTM classifier<br/>Keras]
+    E -->|Softmax > 70%| F[EN / FR translation map]
+    F --> G[Web Speech API<br/>text + audio output]
+    B <--> H[(SQLite<br/>users + history)]
+    A -->|REST: auth, history| B
 ```
-[ FRONTEND: React + Vite ]
-      |
-      | Low-Latency WebSockets (Full-Duplex Frame Stream)
-      | REST API (HTTP Requests for Auth & History)
-      v
-[ BACKEND: FastAPI (Python) ] <---> [ DATABASE: SQLite ]
-      |
-      | Preloaded Inference Router
-      v
-[ AI MODULE: MediaPipe Holistic + TensorFlow Keras LSTM ]
-```
 
-### Technical Specification Table
+## Stack and decisions
 
-| Component | Technology | Role / Architectural Decision |
+| Component | Technology | Why |
 |---|---|---|
-| **Frontend** | React (Vite) + CSS3 | High-speed component rendering, interactive state management, webcam capture |
-| **Styling** | Custom HSL CSS3 | Rich design, glassmorphism card components, high contrast dark theme, micro-animations |
-| **Communication** | WebSockets + Fetch | WebSockets stream binary camera frames continuously; REST Fetch handles registration and database queries |
-| **Audio Synthesis** | Web Speech API | Client-side native text-to-speech synthesis supporting English and French voices (zero server cost, instant response) |
-| **Backend API** | FastAPI (Python) | High-speed asynchronous Python server, automatic OpenAPI specs generation, low router overhead |
-| **Authentication** | JWT + bcrypt | JSON Web Tokens for session handling, bcrypt hashing for secure database credential storage |
-| **Database** | SQLite + SQLAlchemy | SQL database layer for persistent translation history logging and user accounts |
-| **Feature Extraction** | MediaPipe Holistic | Google framework to extract 543 spatial coordinates (joints, face, hands) in real time |
-| **Sequence Classifier** | CNN-LSTM (Keras) | Deep recurrent network to classify physical joint trajectory paths over time |
-| **Bilingual Output** | EN / FR Translation Map | Recognized ASL signs are mapped to English or French text and spoken in the selected language locale |
+| Frontend | React (Vite) + CSS3 | Fast rendering, webcam capture, glassmorphism dark UI |
+| Transport | WebSockets + REST | WebSockets stream frames full-duplex; REST handles auth and history |
+| Speech | Web Speech API | Native client-side TTS, EN + FR locales — zero server cost |
+| Backend | FastAPI | Async Python, auto OpenAPI docs, low router overhead |
+| Auth | JWT + bcrypt | Token sessions, hashed credentials |
+| Database | SQLite + SQLAlchemy | Persistent translation history and user accounts |
+| Features | MediaPipe Holistic | 543 real-time 3D landmarks (pose, face, both hands) |
+| Classifier | CNN-LSTM (Keras) | Classifies joint trajectories over time |
 
----
+## The deep learning pipeline
 
-## 3. Deep Learning Pipeline Explained
+### 1. Feature extraction
 
-### Phase 1: Feature Extraction (MediaPipe Holistic)
-Instead of feeding raw color video frames (pixels) into a deep neural network, we use **MediaPipe Holistic**:
+Rather than feeding raw pixels to the network, MediaPipe Holistic extracts per frame:
 
-1. **Pose Landmarks:** Tracks 33 body skeleton joints (shoulders, elbows, wrists, hips) in 3D coordinate space `(x, y, z)` plus a visibility score.
-2. **Face Landmarks:** Tracks 468 facial mesh coordinates to evaluate emotional expressions.
-3. **Left & Right Hand Landmarks:** Tracks 21 coordinates per finger joint on both hands in 3D coordinate space.
-4. **Output:** For each frame, coordinates are concatenated into a single flat numerical array of shape **(1, 1662)**.
+- **33 pose landmarks** — body skeleton in `(x, y, z)` + visibility
+- **468 face landmarks** — facial mesh for expression
+- **21 landmarks per hand** — finger joints in 3D
 
-**Why MediaPipe?**
-- **Invariance to Noise:** MediaPipe completely discards the background (clothing color, wall paint, room lighting). The LSTM model *only* sees pure skeletal coordinates.
-- **Extremely Lightweight:** Passing flat arrays of 1,662 numbers requires a fraction of the memory of passing a 640×480 pixel frame (921,600 numbers).
+Concatenated into a flat `(1, 1662)` array.
 
-### Phase 2: Sequential Modeling (LSTM Recurrent Layer)
-A single static image of a hand cannot define a sign. The word "Hello" requires movement over time.
+**Why landmarks over pixels:** the model never sees background, clothing colour or lighting — only skeletal geometry, so it generalises across environments. It's also ~550× smaller than a 640×480 frame (1,662 floats vs 921,600).
 
-1. **Frame Accumulation:** The frontend streams video frames at 10 FPS. The backend collects a sequence of exactly **30 frames** (≈3 seconds of movement).
-2. **LSTM Network:** We feed the `(30, 1662)` matrix into a multi-layer LSTM network.
-3. **Memory Cells:** LSTMs contain feedback connections that act as internal memory. They process sequences chronologically, remembering the movement trajectory of earlier frames.
-4. **Softmax Output:** The final layer calculates a probability distribution across the sign library. If the highest probability is above **70%**, it is translated.
+### 2. Sequence classification
 
-### Model Architecture
+A still image can't define a sign — "Hello" is *movement*.
+
+1. Frontend streams at 10 FPS; backend buffers exactly **30 frames** (≈3 seconds)
+2. The `(30, 1662)` matrix goes into a multi-layer LSTM
+3. Memory cells carry earlier trajectory forward through the sequence
+4. Softmax over the sign library; predictions above **70% confidence** are translated
 
 ```
 Input: (30 frames × 1662 features)
-       |
-LSTM(64 units) → BatchNorm → Dropout(0.3)
-       |
-LSTM(128 units) → BatchNorm → Dropout(0.3)
-       |
+   ↓
+LSTM(64) → BatchNorm → Dropout(0.3)
+   ↓
+LSTM(128) → BatchNorm → Dropout(0.3)
+   ↓
 Dense(64, ReLU) → Dropout(0.5)
-       |
+   ↓
 Dense(N_classes, Softmax)
 ```
 
----
+## Bilingual output
 
-## 4. Bilingual Output System (English / French)
+Recognised signs map to English or French text through a built-in dictionary, then speak through the matching TTS locale (`en-US` / `fr-FR`) with native phonetics. This matters in Cameroon, where both are official languages.
 
-A key accessibility feature of SignSpeak is its support for two major official languages:
+## Engineering notes
 
-- **English Mode:** Recognized ASL signs are displayed and spoken in English.
-- **French Mode:** Recognized ASL signs are automatically mapped to their French equivalents using a built-in translation dictionary. Text-to-speech uses the `fr-FR` locale to pronounce words with native French phonetics.
+**Bandwidth.** Frames are drawn to an offscreen canvas and compressed to 60%-quality JPEG binary blobs before streaming. This cuts bandwidth by over 90% and keeps end-to-end latency under 40 ms.
 
----
+**Development fallback.** `inference.py` detects whether `tensorflow`, `mediapipe` and `cv2` are importable. If they aren't, it runs a stub inference path so the WebSocket transport, frame buffering and UI can be developed and tested without the ML stack installed — useful in CI and on low-spec machines. **Production and the live demo always run the trained model**; the stub exists only so the plumbing can be worked on independently of the model.
 
-## 5. Resilience & Fallback Architecture
+## Running locally
 
-The software is built with high-resiliency fallbacks:
-
-- **Adaptive Simulation Mode:** `inference.py` automatically intercepts missing modules (`tensorflow`, `mediapipe`, `cv2`). If absent, it enters Simulation Mode, still performing full webcam streaming, frame buffering, and synthetic sign output.
-- **Low-Latency Binary Compression:** Instead of streaming raw video, frames are captured to an offline canvas, compressed to 60% quality JPEG binary blobs, and streamed over WebSockets. This cuts bandwidth consumption by **over 90%**, keeping latency below **40 milliseconds**.
-
----
-
-## 6. How to Deploy and Run Locally
-
-### Phase 1: Start the Backend Server
+**Backend**
 ```bash
 cd backend/
 pip install -r requirements.txt
 uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
-Verify at: http://127.0.0.1:8000/api/docs
+API docs at `http://127.0.0.1:8000/api/docs`
 
-### Phase 2: Launch the React Frontend
+**Frontend**
 ```bash
 cd frontend/
 npm install
 npm run dev
 ```
-Open: http://localhost:5173
+Open `http://localhost:5173`
 
----
+## Limitations
 
-## 7. Future Work & Improvements
+- Vocabulary is limited to the signs in the trained library — this is a proof of concept, not a full interpreter
+- One-way only: sign → text/speech
+- Requires reasonable lighting and the signer's upper body in frame
+- Trained on a self-collected dataset; accuracy on unseen signers is unverified
 
-**Two-Way Communication (Avatar Integration)**
-Currently, the system is a one-way translator (Sign Language ➡️ Spoken/Written Language). A major planned improvement is to implement two-way communication:
-- **Speech-to-Text (STT):** Capturing spoken language from hearing users and converting it to text.
-- **NLP Translation:** Translating the spoken language structure into ASL Gloss syntax.
-- **3D Avatar Rendering:** Using a WebGL/Three.js integrated avatar to visually sign the spoken words back to the deaf or hard-of-hearing user. 
+## Roadmap
 
-This will establish a complete, bi-directional virtual interpreter experience, removing the need for the non-hearing user to read text.
+**Two-way communication.** The clear next step is a return path:
+
+- **Speech-to-text** — capture the hearing user's speech
+- **NLP translation** — restructure it into ASL Gloss syntax
+- **3D avatar** — render the signs back via a WebGL/Three.js avatar
+
+That would close the loop into a bi-directional virtual interpreter, so the deaf user no longer has to read text.
+
+## Acknowledgements
+
+Final-year capstone project, University of Buea, College of Technology.
+Supervised by Mr. Nkome.
+
+## Licence
+
+MIT — see [LICENSE](LICENSE).
