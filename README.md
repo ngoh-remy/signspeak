@@ -1,6 +1,6 @@
 # SignSpeak
 
-**Real-time American Sign Language translation in the browser — gesture to text and speech, in English and French.**
+**Real-time American Sign Language translation in the browser  gesture to text and speech, in English and French.**
 
 [Live demo](https://signspeak2.vercel.app) · Built with MediaPipe Holistic + TensorFlow LSTM + FastAPI + React
 
@@ -10,9 +10,9 @@
 
 ## The problem
 
-Sign language is the native tongue of deaf and non-verbal people, yet under 1% of the hearing population understands it. In hospitals, schools, courts and government offices this becomes a hard barrier — and human interpreters are scarce and expensive.
+Sign language is the native tongue of deaf and non-verbal people, yet under 1% of the hearing population understands it. In hospitals, schools, courts and government offices this becomes a hard barrier and human interpreters are scarce and expensive.
 
-SignSpeak captures ASL gestures from any basic webcam, extracts skeletal landmarks, classifies the movement sequence with a recurrent neural network, and speaks the result aloud — with no specialised hardware.
+SignSpeak captures ASL gestures from any basic webcam, extracts skeletal landmarks, classifies the movement sequence with a recurrent neural network, and speaks the result aloud  with no specialised hardware.
 
 ## How it works
 
@@ -47,17 +47,17 @@ flowchart TD
 
 Rather than feeding raw pixels to the network, MediaPipe Holistic extracts per frame:
 
-- **33 pose landmarks** — body skeleton in `(x, y, z)` + visibility
-- **468 face landmarks** — facial mesh for expression
-- **21 landmarks per hand** — finger joints in 3D
+- **33 pose landmarks** - body skeleton in `(x, y, z)` + visibility
+- **468 face landmarks** - facial mesh for expression
+- **21 landmarks per hand** - finger joints in 3D
 
 Concatenated into a flat `(1, 1662)` array.
 
-**Why landmarks over pixels:** the model never sees background, clothing colour or lighting — only skeletal geometry, so it generalises across environments. It's also ~550× smaller than a 640×480 frame (1,662 floats vs 921,600).
+**Why landmarks over pixels:** the model never sees background, clothing colour or lighting  only skeletal geometry, so it generalises across environments. It's also ~550× smaller than a 640×480 frame (1,662 floats vs 921,600).
 
 ### 2. Sequence classification
 
-A still image can't define a sign — "Hello" is *movement*.
+A still image can't define a sign  "Hello" is *movement*.
 
 1. Frontend streams at 10 FPS; backend buffers exactly **30 frames** (≈3 seconds)
 2. The `(30, 1662)` matrix goes into a multi-layer LSTM
@@ -106,7 +106,7 @@ Open `http://localhost:5173`
 
 ## Limitations
 
-- Vocabulary is limited to the signs in the trained library — this is a proof of concept, not a full interpreter
+- Vocabulary is limited to the signs in the trained library this is a proof of concept, not a full interpreter
 - One-way only: sign → text/speech
 - Requires reasonable lighting and the signer's upper body in frame
 - Trained on a self-collected dataset; accuracy on unseen signers is unverified
