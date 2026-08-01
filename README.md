@@ -115,9 +115,9 @@ Open `http://localhost:5173`
 
 **Two-way communication.** The clear next step is a return path:
 
-- **Speech-to-text** — capture the hearing user's speech
-- **NLP translation** — restructure it into ASL Gloss syntax
-- **3D avatar** — render the signs back via a WebGL/Three.js avatar
+- **Speech-to-text**: capture the hearing user's speech
+- **NLP translation**: restructure it into ASL Gloss syntax
+- **3D avatar**: render the signs back via a WebGL/Three.js avatar
 
 That would close the loop into a bi-directional virtual interpreter, so the deaf user no longer has to read text.
 
@@ -128,4 +128,4 @@ Supervised by Mr. Nkome.
 
 ## Licence
 
-MIT — see [LICENSE](LICENSE).
+MIT: see [LICENSE](LICENSE).
